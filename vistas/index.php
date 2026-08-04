@@ -274,8 +274,12 @@ $dbSerials = EquipoSerial::obtenerTodos();
                         <option value="Mantenimiento">🔴 En Revisión / Mantenimiento</option>
                     </select>
 
-                    <button class="btn btn-success" id="btn-scan-serial-tab">
-                        <i data-lucide="scan"></i> Escanear para Registrar Serial
+                    <button class="btn btn-primary" id="btn-scan-serial-photo-tab" title="Tomar Foto / Cargar Imagen a Etiqueta de Equipo (Serial, Marca y Modelo por OCR)">
+                        <i data-lucide="camera"></i> Foto Etiqueta (OCR)
+                    </button>
+
+                    <button class="btn btn-success" id="btn-scan-serial-tab" title="Escanear Código de Barras o QR con la Cámara">
+                        <i data-lucide="scan"></i> Escanear Barras / QR
                     </button>
 
                     <button class="btn btn-primary" id="btn-new-serial-item">
@@ -874,13 +878,16 @@ $dbSerials = EquipoSerial::obtenerTodos();
                     <div class="form-row">
                         <div class="form-group col-6">
                             <label for="form-serial-code">Número de Serial (Único) *</label>
-                            <div class="input-with-button">
-                                <input type="text" id="form-serial-code" required placeholder="Ej: CNC23801CB">
-                                <button type="button" class="btn btn-primary" id="btn-scan-serial-photo" title="Tomar Foto a la Etiqueta de la Caja (Detectar Serial, Marca y Modelo)">
-                                    <i data-lucide="camera"></i> Foto Etiqueta
+                            <div class="input-with-button" style="display:flex; gap:0.3rem; flex-wrap:wrap;">
+                                <input type="text" id="form-serial-code" required placeholder="Ej: CNC23801CB" style="flex:1; min-width:120px;">
+                                <button type="button" class="btn btn-primary btn-sm" id="btn-scan-serial-photo" title="Tomar Foto a la Etiqueta (Marca + Modelo + Serial)">
+                                    <i data-lucide="camera"></i> Foto (OCR)
                                 </button>
-                                <button type="button" class="btn btn-outline" id="btn-scan-serial-modal" title="Escanear Código de Barras con la Cámara">
-                                    <i data-lucide="scan"></i> Código
+                                <button type="button" class="btn btn-success btn-sm" id="btn-scan-serial-barcode" title="Escanear Código de Barras con la Cámara">
+                                    <i data-lucide="barcode"></i> Barras
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" id="btn-scan-serial-modal" title="Escanear Código QR con la Cámara">
+                                    <i data-lucide="qr-code"></i> QR
                                 </button>
                             </div>
                         </div>
@@ -929,8 +936,19 @@ $dbSerials = EquipoSerial::obtenerTodos();
                 </button>
             </div>
             <div class="modal-body text-center">
-                <p id="modal-camera-scanner-desc" style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">
-                    Apunta la cámara al código QR o código de barras del equipo.
+                <div class="scanner-type-selector" style="display:flex; gap:0.4rem; justify-content:center; margin-bottom:0.75rem; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-sm btn-success active" id="btn-scanner-mode-barcode" title="Escanear Código de Barras de Equipo (1D)">
+                        <i data-lucide="barcode"></i> ║▌ Barras
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline" id="btn-scanner-mode-qr" title="Escanear Código QR (2D)">
+                        <i data-lucide="qr-code"></i> 🔳 QR
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-scanner-mode-photo" title="Tomar Foto / Cargar Imagen de Etiqueta (Marca + Modelo + Serial por OCR)">
+                        <i data-lucide="camera"></i> 📷 Foto / Imagen (OCR)
+                    </button>
+                </div>
+                <p id="modal-camera-scanner-desc" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
+                    Apunta la cámara al código de barras, código QR o toma una foto de la etiqueta.
                 </p>
                 <div class="camera-container" style="position:relative; width:100%; min-height:220px; background:#000; border-radius:10px; overflow:hidden;">
                     <div id="modal-qr-reader-viewport"></div>

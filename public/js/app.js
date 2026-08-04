@@ -221,6 +221,11 @@ function loadData() {
     }
   }
   
+  if ((!state.history || state.history.length === 0) && typeof initialHistoryLog !== 'undefined') {
+    state.history = [...initialHistoryLog];
+    saveHistory();
+  }
+
   state.selectedIds = new Set(state.items.map(i => i.id));
 }
 
@@ -485,14 +490,33 @@ function setupEventListeners() {
   document.getElementById('form-serial-item')?.addEventListener('submit', handleSaveSerial);
   document.getElementById('form-serial-itemid')?.addEventListener('change', (e) => autoFillMarcaModeloFromItem(e.target.value));
 
+  // Botones de las 3 opciones de escáner en módulo de Seriales
+  document.getElementById('btn-scan-serial-photo-tab')?.addEventListener('click', () => {
+    document.getElementById('input-file-ocr-label')?.click();
+  });
   document.getElementById('btn-scan-serial-photo')?.addEventListener('click', () => {
     document.getElementById('input-file-ocr-label')?.click();
+  });
+  document.getElementById('btn-scan-serial-barcode')?.addEventListener('click', () => {
+    openCameraScannerModal('BARCODE');
   });
 
   document.getElementById('input-file-ocr-label')?.addEventListener('change', (e) => {
     if (e.target.files && e.target.files[0]) {
       processLabelImageOCR(e.target.files[0]);
     }
+  });
+
+  // Selector interno dentro del Modal de Escáner
+  document.getElementById('btn-scanner-mode-barcode')?.addEventListener('click', () => {
+    switchScannerSubMode('BARCODE');
+  });
+  document.getElementById('btn-scanner-mode-qr')?.addEventListener('click', () => {
+    switchScannerSubMode('QR');
+  });
+  document.getElementById('btn-scanner-mode-photo')?.addEventListener('click', () => {
+    closeCameraScannerModal();
+    document.getElementById('input-file-ocr-label')?.click();
   });
 
   // Modal Ajuste Rápido de Stock
@@ -1578,6 +1602,31 @@ function saveStockAdjustment() {
 }
 
 // --- MODAL CAMERA SCANNER (QR & SERIALES) ---
+function switchScannerSubMode(subMode) {
+  const btnBarcode = document.getElementById('btn-scanner-mode-barcode');
+  const btnQr = document.getElementById('btn-scanner-mode-qr');
+  const btnPhoto = document.getElementById('btn-scanner-mode-photo');
+
+  if (btnBarcode) {
+    btnBarcode.className = subMode === 'BARCODE' ? 'btn btn-sm btn-success active' : 'btn btn-sm btn-outline';
+  }
+  if (btnQr) {
+    btnQr.className = subMode === 'QR' ? 'btn btn-sm btn-success active' : 'btn btn-sm btn-outline';
+  }
+  if (btnPhoto) {
+    btnPhoto.className = subMode === 'PHOTO' ? 'btn btn-sm btn-primary active' : 'btn btn-sm btn-outline';
+  }
+
+  if (subMode === 'BARCODE') {
+    openCameraScannerModal('BARCODE');
+  } else if (subMode === 'QR') {
+    openCameraScannerModal('QR');
+  } else if (subMode === 'PHOTO') {
+    closeCameraScannerModal();
+    document.getElementById('input-file-ocr-label')?.click();
+  }
+}
+
 function openCameraScannerModal(mode = 'INVENTORY') {
   state.modalScannerMode = mode;
   const modal = document.getElementById('modal-camera-scanner');
@@ -1585,13 +1634,27 @@ function openCameraScannerModal(mode = 'INVENTORY') {
 
   const titleEl = document.getElementById('modal-camera-scanner-title');
   const descEl = document.getElementById('modal-camera-scanner-desc');
+  const btnBarcode = document.getElementById('btn-scanner-mode-barcode');
+  const btnQr = document.getElementById('btn-scanner-mode-qr');
 
   if (mode === 'INVENTORY') {
     if (titleEl) titleEl.innerHTML = '<i data-lucide="qr-code"></i> Escáner de Stickers QR (Inventario & Control)';
     if (descEl) descEl.textContent = 'Apunta la cámara al sticker QR del sistema para registrar una Entrada o Salida de consumible.';
+    if (btnQr) btnQr.className = 'btn btn-sm btn-success active';
+    if (btnBarcode) btnBarcode.className = 'btn btn-sm btn-outline';
+  } else if (mode === 'BARCODE') {
+    if (titleEl) titleEl.innerHTML = '<i data-lucide="barcode"></i> Escáner de Código de Barras (Equipos & Cajas)';
+    if (descEl) descEl.textContent = 'Apunta la cámara al código de barras del equipo o caja para capturar el serial.';
+    if (btnBarcode) btnBarcode.className = 'btn btn-sm btn-success active';
+    if (btnQr) btnQr.className = 'btn btn-sm btn-outline';
+  } else if (mode === 'QR') {
+    if (titleEl) titleEl.innerHTML = '<i data-lucide="qr-code"></i> Escáner de Código QR (Equipos & Cajas)';
+    if (descEl) descEl.textContent = 'Apunta la cámara al código QR impreso en el equipo o caja.';
+    if (btnQr) btnQr.className = 'btn btn-sm btn-success active';
+    if (btnBarcode) btnBarcode.className = 'btn btn-sm btn-outline';
   } else {
-    if (titleEl) titleEl.innerHTML = '<i data-lucide="scan"></i> Escáner de Seriales de Equipos (Almacén)';
-    if (descEl) descEl.textContent = 'Apunta la cámara al número de serial o código de barras del equipo en almacén.';
+    if (titleEl) titleEl.innerHTML = '<i data-lucide="scan"></i> Escáner de Seriales (Barras, QR o Foto)';
+    if (descEl) descEl.textContent = 'Selecciona la opción deseada (Código de Barras, Código QR o Foto de Etiqueta).';
   }
 
   const inputManual = document.getElementById('input-modal-manual-scan');
@@ -2059,7 +2122,7 @@ function logMovement(id, itemName, type, change, finalStock, notes = '', detailO
   };
 
   state.history.unshift(record);
-  if (state.history.length > 200) state.history.pop();
+  if (state.history.length > 5000) state.history.pop();
   saveHistory();
 }
 

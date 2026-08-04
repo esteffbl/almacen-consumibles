@@ -547,43 +547,212 @@
                             <input type="number" id="movement-qty" min="1" value="1" required placeholder="Ej: 5">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="movement-person">Solicitante / Recibido Por / Entregado A *</label>
+                            <select id="movement-person" class="custom-select" required>
+                                <option value="ANDRES CAMPOS" data-cargo="ESPECIALISTA DE INFRAESTRUCTURA Y RADIOTELECOMUNICACIONES">ANDRES CAMPOS</option>
+                                <option value="BALDASSARE CLEMENTI" data-cargo="ANALISTA DE SOPORTE USUARIO" selected>BALDASSARE CLEMENTI</option>
+                                <option value="DAYANA PEREZ" data-cargo="COORDINADORA GESTIÓN DE USUARIOS">DAYANA PEREZ</option>
+                                <option value="ESTEFANY BRUZUAL" data-cargo="ANALISTA DE RECURSOS DE TI">ESTEFANY BRUZUAL</option>
+                                <option value="GREGORY GONZALEZ" data-cargo="ESPECIALISTA DE REDES DE DATOS">GREGORY GONZALEZ</option>
+                                <option value="HUMBERTO NOLASCO" data-cargo="ESPECIALISTAS DE GESTION DE USUARIOS">HUMBERTO NOLASCO</option>
+                                <option value="RAUL FARFAN" data-cargo="ANALISTA DE SOPORTE USUARIO">RAUL FARFAN</option>
+                                <option value="RICHARD ROJAS" data-cargo="SUPERVISOR DE SOPORTE USUARIO">RICHARD ROJAS</option>
+                                <option value="ROBERT MORALES" data-cargo="ANALISTA DE SOPORTE USUARIO">ROBERT MORALES</option>
+                                <option value="RONAL VEGAS" data-cargo="ESPECIALISA DE SOFTWARE">RONAL VEGAS</option>
+                                <option value="WILMER DIAZ" data-cargo="GERENTE TI">WILMER DIAZ</option>
+                                <option value="YIVINITZZA GONZALEZ" data-cargo="SUPERVISORA DE RECURSOS DE TI">YIVINITZZA GONZALEZ</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="movement-cargo">Cargo del Solicitante</label>
+                            <input type="text" id="movement-cargo" readonly style="background: var(--bg-primary); font-weight: 600;" value="ANALISTA DE SOPORTE USUARIO">
+                        </div>
+                    </div>
 
                     <div class="form-row">
                         <div class="form-group col-6">
-                            <label for="movement-person">Solicitante / Recibido Por / Entregado A</label>
-                            <input type="text" id="movement-person" placeholder="Ej: Ing. Juan Pérez, Soporte Técnico">
-                        </div>
-                        <div class="form-group col-6">
-                            <label for="movement-dept">Departamento / Área Destino</label>
-                            <input type="text" id="movement-dept" list="dept-list" placeholder="Ej: Infraestructura, Planta, RRHH">
+                            <label for="movement-dept">Gerencia / Área Destino</label>
+                            <input type="text" id="movement-dept" list="dept-list" placeholder="Ej: GERENCIA DE TI" value="GERENCIA DE TI">
                             <datalist id="dept-list">
+                                <option value="GERENCIA DE TI">
                                 <option value="Soporte Técnico">
                                 <option value="Infraestructura & Redes">
                                 <option value="Sistemas & Telecomunicaciones">
                                 <option value="Recursos Humanos">
                                 <option value="Administración & Finanzas">
-                                <option value="Operaciones / Planta">
-                                <option value="Almacén Principal">
+                                <option value="Planta / Operaciones">
                             </datalist>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="movement-analista">Analista AIT Responsable *</label>
+                            <select id="movement-analista" class="custom-select">
+                                <option value="ANDRES CAMPOS">ANDRES CAMPOS</option>
+                                <option value="BALDASSARE CLEMENTI">BALDASSARE CLEMENTI</option>
+                                <option value="DAYANA PEREZ">DAYANA PEREZ</option>
+                                <option value="ESTEFANY BRUZUAL" selected>ESTEFANY BRUZUAL</option>
+                                <option value="GREGORY GONZALEZ">GREGORY GONZALEZ</option>
+                                <option value="HUMBERTO NOLASCO">HUMBERTO NOLASCO</option>
+                                <option value="RAUL FARFAN">RAUL FARFAN</option>
+                                <option value="RICHARD ROJAS">RICHARD ROJAS</option>
+                                <option value="ROBERT MORALES">ROBERT MORALES</option>
+                                <option value="RONAL VEGAS">RONAL VEGAS</option>
+                                <option value="WILMER DIAZ">WILMER DIAZ</option>
+                                <option value="YIVINITZZA GONZALEZ">YIVINITZZA GONZALEZ</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group col-6">
-                            <label for="movement-ref">N° Documento / Vale / Ticket</label>
+                        <div class="form-group col-4">
+                            <label for="movement-marca">Marca del Consumible</label>
+                            <input type="text" id="movement-marca" value="S/M" placeholder="Ej: S/M, HP, RICOH">
+                        </div>
+                        <div class="form-group col-4">
+                            <label for="movement-modelo">Modelo</label>
+                            <input type="text" id="movement-modelo" value="S/M" placeholder="Ej: S/M, RICOH IM4000">
+                        </div>
+                        <div class="form-group col-4">
+                            <label for="movement-ref">N° Vale / Ticket</label>
                             <input type="text" id="movement-ref" placeholder="Ej: Vale #045, Ticket #1092">
                         </div>
-                        <div class="form-group col-6">
-                            <label for="movement-notes">Observaciones / Motivo</label>
-                            <input type="text" id="movement-notes" placeholder="Ej: Reemplazo teclado defectuoso, Compra mensual">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <label for="movement-notes">Motivo / Observaciones</label>
+                            <input type="text" id="movement-notes" placeholder="Ej: SUMINISTRO PARA IMPRESORA DE PALMICHAL">
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="btn-cancel-movement-modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btn-save-movement">Guardar Movimiento</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-movement">
+                        <i data-lucide="file-text"></i> Guardar y Generar Planilla
+                    </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PLANILLA OFICIAL PEQUIVEN (COMPROBANTE DE ENTRADA / SALIDA - IMPRESIÓN Y PDF) -->
+    <div class="modal-overlay hidden" id="modal-planilla-oficial">
+        <div class="modal-container" style="max-width: 820px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 1.5rem;">
+            <div class="modal-header no-print" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="planilla-modal-title" style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="file-text"></i> Planilla Oficial Pequiven
+                </h3>
+                <button class="btn-close-modal" id="btn-close-planilla-modal" style="background: none; border: none; cursor: pointer; font-size: 1.2rem;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body" style="padding: 0; display: flex; justify-content: center; background: #ffffff;">
+                <div class="printable-planilla-pequiven" id="printable-planilla-content" style="width: 100%; max-width: 750px; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12px; padding: 15px; box-sizing: border-box;">
+                    
+                    <!-- 1. MEMBRETE / BANNER IMAGEN -->
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <img src="Imagen1.jpg" alt="Pequiven logo" style="max-width: 100%; height: auto; max-height: 75px; display: block; margin: 0 auto;">
+                    </div>
+
+                    <!-- 2. TITULO PRINCIPAL -->
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <h2 id="plan-doc-title" style="font-size: 16px; font-weight: bold; margin: 0; text-transform: uppercase; color: #000000;">ENTREGA DE CONSUMIBLES</h2>
+                    </div>
+
+                    <!-- 3. TABLA 1: DATOS DEL SOLICITANTE -->
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 15px; font-size: 11px;">
+                        <tbody>
+                            <tr>
+                                <td style="width: 50%; background-color: #FCE4D6; font-weight: bold; text-align: center; border: 1px solid #000000; padding: 5px; color: #000000;">Solicitante</td>
+                                <td style="width: 50%; background-color: #FCE4D6; font-weight: bold; text-align: center; border: 1px solid #000000; padding: 5px; color: #000000;">CARGO</td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 8px; color: #000000;" id="plan-solicitante-nombre">BALDASSARE CLEMENTI</td>
+                                <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 8px; color: #000000;" id="plan-solicitante-cargo">ANALISTA DE SOPORTE USUARIO</td>
+                            </tr>
+                            <tr>
+                                <td style="background-color: #FCE4D6; font-weight: bold; text-align: center; border: 1px solid #000000; padding: 5px; color: #000000;">GERENCIA</td>
+                                <td style="background-color: #FCE4D6; font-weight: bold; text-align: center; border: 1px solid #000000; padding: 5px; color: #000000;">MOTIVO</td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 12px 8px; color: #000000;" id="plan-solicitante-gerencia">GERENCIA DE TI</td>
+                                <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 12px 8px; color: #000000;" id="plan-solicitante-motivo">SUMINISTRO PARA IMPRESORA DE PALMICHAL.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 4. TABLA 2: DATOS DE EQUIPOS Y HERRAMIENTAS -->
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 15px; font-size: 11px;">
+                        <thead>
+                            <tr>
+                                <th colspan="5" style="background-color: #FCE4D6; font-weight: bold; text-align: center; border: 1px solid #000000; padding: 6px; text-transform: uppercase; color: #000000;">DATOS DE EQUIPOS Y HERRAMIENTAS</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 30%; border: 1px solid #000000; padding: 6px; text-align: center; font-weight: bold; color: #000000;">DESCRIPCION</th>
+                                <th style="width: 15%; border: 1px solid #000000; padding: 6px; text-align: center; font-weight: bold; color: #000000;">MARCA</th>
+                                <th style="width: 15%; border: 1px solid #000000; padding: 6px; text-align: center; font-weight: bold; color: #000000;">MODELO</th>
+                                <th style="width: 25%; border: 1px solid #000000; padding: 6px; text-align: center; font-weight: bold; color: #000000;">OBSERVACIONES</th>
+                                <th style="width: 15%; border: 1px solid #000000; padding: 6px; text-align: center; font-weight: bold; color: #000000;">CANTIDAD</th>
+                            </tr>
+                        </thead>
+                        <tbody id="plan-items-table-body">
+                            <tr>
+                                <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; color: #000000;" id="plan-item-desc">TONER IMPRESORA RICOH IM4000</td>
+                                <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; color: #000000;" id="plan-item-marca">S/M</td>
+                                <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; color: #000000;" id="plan-item-modelo">S/M</td>
+                                <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; color: #000000;" id="plan-item-obs">s/o</td>
+                                <td style="border: 1px solid #000000; padding: 8px; text-align: center; font-weight: bold; color: #000000;" id="plan-item-cant">1</td>
+                            </tr>
+                            <tr><td style="border: 1px solid #000000; height: 22px;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td></tr>
+                            <tr><td style="border: 1px solid #000000; height: 22px;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td></tr>
+                            <tr><td style="border: 1px solid #000000; height: 22px;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td></tr>
+                            <tr><td style="border: 1px solid #000000; height: 22px;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td></tr>
+                            <tr><td style="border: 1px solid #000000; height: 22px;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td><td style="border: 1px solid #000000;">&nbsp;</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" style="border: 1px solid #000000; padding: 6px 12px; text-align: right; font-weight: bold; font-size: 12px; color: #000000;">TOTAL</td>
+                                <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: bold; font-size: 12px; color: #000000;" id="plan-item-total">1</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- 5. TABLA 3: PIE DE FIRMAS -->
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #000000; font-size: 11px;">
+                        <tbody>
+                            <tr>
+                                <td style="width: 35%; background-color: #FCE4D6; font-weight: bold; border: 1px solid #000000; padding: 5px; color: #000000;">CONTROL DE RESURSOS TECNOLOGICOS:</td>
+                                <td style="width: 65%; background-color: #FCE4D6; font-weight: bold; border: 1px solid #000000; padding: 5px; color: #000000;" colspan="2">FIRMA DEL SOLICITANTE:</td>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid #000000; padding: 8px; vertical-align: top; color: #000000;">
+                                    <div style="margin-bottom: 4px;"><strong>NOMBRE:</strong> ESTEFANY BRUZUAL</div>
+                                    <div style="margin-bottom: 4px;"><strong>FECHA:</strong> <span class="plan-fecha-actual">03/08/2026</span></div>
+                                    <div><strong>FIRMA:</strong> ____________________</div>
+                                </td>
+                                <td style="width: 35%; border: 1px solid #000000; padding: 8px; vertical-align: top; color: #000000;">
+                                    <div style="margin-bottom: 4px;"><strong>NOMBRE:</strong> <span id="plan-firma-solic-nombre">BALDASSARE CLEMENTI</span></div>
+                                    <div style="margin-bottom: 4px;"><strong>FECHA:</strong> <span class="plan-fecha-actual">03/08/2026</span></div>
+                                    <div><strong>FIRMA:</strong> ____________________</div>
+                                </td>
+                                <td style="width: 30%; border: 1px solid #000000; padding: 8px; vertical-align: top; color: #000000;">
+                                    <div><strong>Observacion:</strong></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+            <div class="modal-footer no-print" style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-planilla-modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btn-print-planilla">
+                    <i data-lucide="printer"></i> Imprimir / Guardar en PDF
+                </button>
+            </div>
         </div>
     </div>
 
@@ -635,13 +804,16 @@
                     <div class="form-row">
                         <div class="form-group col-6">
                             <label for="form-serial-code">Número de Serial (Único) *</label>
-                            <div class="input-with-button">
-                                <input type="text" id="form-serial-code" required placeholder="Ej: CNC23801CB">
-                                <button type="button" class="btn btn-primary" id="btn-scan-serial-photo" title="Tomar Foto a la Etiqueta de la Caja (Detectar Serial, Marca y Modelo)">
-                                    <i data-lucide="camera"></i> Foto Etiqueta
+                            <div class="input-with-button" style="display:flex; gap:0.3rem; flex-wrap:wrap;">
+                                <input type="text" id="form-serial-code" required placeholder="Ej: CNC23801CB" style="flex:1; min-width:120px;">
+                                <button type="button" class="btn btn-primary btn-sm" id="btn-scan-serial-photo" title="Tomar Foto a la Etiqueta (Marca + Modelo + Serial)">
+                                    <i data-lucide="camera"></i> Foto (OCR)
                                 </button>
-                                <button type="button" class="btn btn-outline" id="btn-scan-serial-modal" title="Escanear Código de Barras con la Cámara">
-                                    <i data-lucide="scan"></i> Código
+                                <button type="button" class="btn btn-success btn-sm" id="btn-scan-serial-barcode" title="Escanear Código de Barras con la Cámara">
+                                    <i data-lucide="barcode"></i> Barras
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" id="btn-scan-serial-modal" title="Escanear Código QR con la Cámara">
+                                    <i data-lucide="qr-code"></i> QR
                                 </button>
                             </div>
                         </div>
@@ -765,7 +937,9 @@
     <input type="file" id="input-file-ocr-label" accept="image/*" capture="environment" style="display:none;">
 
     <!-- Application Scripts -->
+    <script src="js/imagen1_base64.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/data_history.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
