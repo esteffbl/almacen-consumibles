@@ -483,6 +483,7 @@ function setupEventListeners() {
   document.getElementById('btn-close-serial-modal')?.addEventListener('click', closeSerialModal);
   document.getElementById('btn-cancel-serial-modal')?.addEventListener('click', closeSerialModal);
   document.getElementById('form-serial-item')?.addEventListener('submit', handleSaveSerial);
+  document.getElementById('form-serial-itemid')?.addEventListener('change', (e) => autoFillMarcaModeloFromItem(e.target.value));
 
   // Modal Ajuste Rápido de Stock
   document.getElementById('btn-close-stock-modal')?.addEventListener('click', closeStockModal);
@@ -1084,8 +1085,67 @@ function renderSerials() {
     `;
   }).join('');
 
-  saveSerials();
-  initLucideIcons();
+  savefunction parseBrandAndModel(itemName) {
+  if (!itemName) return { brand: 'S/M', model: 'S/M' };
+
+  const knownBrands = [
+    'HP', 'HEWLETT PACKARD', 'LENOVO', 'DELL', 'CISCO', 'RICOH', 'EPSON',
+    'CANON', 'KINGSTON', 'SAMSUNG', 'LG', 'TP-LINK', 'TPLINK', 'HIKVISION',
+    'APC', 'KYOCERA', 'LEXMARK', 'XEROX', 'LOGITECH', 'ZEBRA', 'COMPAQ',
+    'BROTHER', 'PANASONIC', 'SONY', 'ACER', 'ASUS', 'INTEL', 'AMD', 'NVIDIA',
+    'DAHUA', 'UBIQUITI', 'FORTINET', 'MIKROTIK', 'TRIPP-LITE', 'TRIPPLITE'
+  ];
+
+  const cleanName = itemName.trim();
+  const uppercaseName = cleanName.toUpperCase();
+
+  let foundBrand = '';
+  for (const b of knownBrands) {
+    const regex = new RegExp(`\\b${b}\\b`, 'i');
+    if (regex.test(uppercaseName)) {
+      foundBrand = b === 'HEWLETT PACKARD' ? 'HP' : b;
+      break;
+    }
+  }
+
+  if (!foundBrand) {
+    const parts = cleanName.split(/\s+/);
+    if (parts.length > 0 && parts[0].length <= 15) {
+      foundBrand = parts[0];
+    }
+  }
+
+  let modelStr = cleanName;
+  const commonPrefixes = [
+    /^MONITOR\s+/i, /^PC\s+/i, /^LAPTOP\s+/i, /^IMPRESORA\s+/i, /^EQUIPO\s+/i,
+    /^SWITCH\s+/i, /^ROUTER\s+/i, /^SERVIDOR\s+/i, /^SCANNER\s+/i, /^TECLADO\s+/i,
+    /^RATON\s+/i, /^MOUSE\s+/i, /^DISCO\s+/i, /^MEMORIA\s+/i, /^TONER\s+/i, /^TÓNER\s+/i
+  ];
+
+  commonPrefixes.forEach(p => {
+    modelStr = modelStr.replace(p, '');
+  });
+
+  if (foundBrand) {
+    const brandRegex = new RegExp(`^${foundBrand}\\s+`, 'i');
+    modelStr = modelStr.replace(brandRegex, '');
+  }
+
+  return {
+    brand: foundBrand || 'S/M',
+    model: modelStr.trim() || cleanName
+  };
+}
+
+function autoFillMarcaModeloFromItem(itemId) {
+  const matchedItem = state.items.find(i => String(i.id) === String(itemId));
+  if (matchedItem) {
+    const parsed = parseBrandAndModel(matchedItem.item);
+    const marcaInput = document.getElementById('form-serial-marca');
+    const modeloInput = document.getElementById('form-serial-modelo');
+    if (marcaInput) marcaInput.value = parsed.brand;
+    if (modeloInput) modeloInput.value = parsed.model;
+  }
 }
 
 function openSerialModal(serialCode = null) {
@@ -1096,21 +1156,29 @@ function openSerialModal(serialCode = null) {
 
   if (serialCode) {
     const eq = state.serials.find(s => s.serial === serialCode);
-    if (!eq) return;
-
-    title.textContent = 'Editar Serial en Almacén';
-    document.getElementById('form-serial-original').value = eq.serial;
-    document.getElementById('form-serial-code').value = eq.serial;
-    document.getElementById('form-serial-itemid').value = eq.itemId || '1';
-    document.getElementById('form-serial-marca').value = eq.marca || '';
-    document.getElementById('form-serial-modelo').value = eq.modelo || '';
-    document.getElementById('form-serial-estado').value = eq.estado || 'Disponible';
-    document.getElementById('form-serial-ubicacion').value = eq.ubicacion || 'Almacén Principal';
+    if (eq) {
+      title.textContent = 'Editar Serial en Almacén';
+      document.getElementById('form-serial-original').value = eq.serial;
+      document.getElementById('form-serial-code').value = eq.serial;
+      document.getElementById('form-serial-itemid').value = eq.itemId || (state.items[0] ? state.items[0].id : '1');
+      document.getElementById('form-serial-marca').value = eq.marca || '';
+      document.getElementById('form-serial-modelo').value = eq.modelo || '';
+      document.getElementById('form-serial-estado').value = eq.estado || 'Disponible';
+    } else {
+      title.textContent = 'Registrar Nuevo Serial en Almacén';
+      if (form) form.reset();
+      document.getElementById('form-serial-original').value = '';
+      document.getElementById('form-serial-code').value = serialCode;
+      const selectedId = document.getElementById('form-serial-itemid')?.value || (state.items[0] ? state.items[0].id : '');
+      if (selectedId) autoFillMarcaModeloFromItem(selectedId);
+    }
   } else {
     title.textContent = 'Registrar Nuevo Serial en Almacén';
-    form.reset();
+    if (form) form.reset();
     document.getElementById('form-serial-original').value = '';
     document.getElementById('form-serial-code').value = `SN-${Math.floor(100000 + Math.random() * 900000)}`;
+    const selectedId = document.getElementById('form-serial-itemid')?.value || (state.items[0] ? state.items[0].id : '');
+    if (selectedId) autoFillMarcaModeloFromItem(selectedId);
   }
 
   modal?.classList.remove('hidden');
@@ -1125,13 +1193,21 @@ function handleSaveSerial(e) {
   const origSerial = document.getElementById('form-serial-original').value;
   const newSerial = document.getElementById('form-serial-code').value.trim();
   const itemId = document.getElementById('form-serial-itemid').value;
-  const marca = document.getElementById('form-serial-marca').value.trim();
-  const modelo = document.getElementById('form-serial-modelo').value.trim();
+  let marca = document.getElementById('form-serial-marca').value.trim();
+  let modelo = document.getElementById('form-serial-modelo').value.trim();
   const estado = document.getElementById('form-serial-estado').value;
-  const ubi = document.getElementById('form-serial-ubicacion').value.trim() || 'Almacén Principal';
 
-  const matchedItem = state.items.find(i => i.id === itemId);
+  const matchedItem = state.items.find(i => String(i.id) === String(itemId));
   const itemType = matchedItem ? matchedItem.item : 'Equipo';
+  const ubi = matchedItem ? (matchedItem.ubicacion || 'Almacén Principal') : 'Almacén Principal';
+
+  if (!marca || !modelo) {
+    if (matchedItem) {
+      const parsed = parseBrandAndModel(matchedItem.item);
+      if (!marca) marca = parsed.brand;
+      if (!modelo) modelo = parsed.model;
+    }
+  }
 
   if (!newSerial) {
     alert('El número de serial es obligatorio.');
@@ -1145,8 +1221,8 @@ function handleSaveSerial(e) {
         serial: newSerial,
         itemId: itemId,
         tipo: itemType,
-        marca: marca,
-        modelo: modelo,
+        marca: marca || 'S/M',
+        modelo: modelo || 'S/M',
         estado: estado,
         ubicacion: ubi,
         fechaRegistro: state.serials[idx].fechaRegistro || new Date().toISOString().slice(0, 10)
@@ -1161,14 +1237,20 @@ function handleSaveSerial(e) {
       serial: newSerial,
       itemId: itemId,
       tipo: itemType,
-      marca: marca,
-      modelo: modelo,
+      marca: marca || 'S/M',
+      modelo: modelo || 'S/M',
       estado: estado,
       ubicacion: ubi,
       fechaRegistro: new Date().toISOString().slice(0, 10)
     });
 
     logMovement(itemId, `${itemType} (SN: ${newSerial})`, 'Registro Serial', 1, matchedItem ? matchedItem.stock : 1, `Registro de serial ${marca} ${modelo} en almacén`);
+  }
+
+  closeSerialModal();
+  saveSerials();
+  renderSerials();
+}
   }
 
   saveSerials();
