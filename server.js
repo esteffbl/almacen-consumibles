@@ -134,14 +134,11 @@ app.post('/api/movimientos', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
-
-const os = require('os');
-
 const os = require('os');
 
 // Helper para inicialización automática completa de la base de datos en la Nube
 async function initDatabaseSchema() {
+
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS consumibles (
