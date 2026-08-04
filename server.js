@@ -6,10 +6,20 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 const db = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Evitar que errores no capturados tumben el proceso Node en la Nube
+process.on('uncaughtException', (err) => {
+  console.warn('⚠️ Excepción capturada:', err.message);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('⚠️ Rechazo no manejado capturado:', reason);
+});
 
 // Middlewares
 app.use(cors());
@@ -18,127 +28,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ----------------------------------------------------------------------------
-// RUTAS REST API - INVENTARIO GENERAL
+// HELPER INICIALIZACIÓN DE ESQUEMA EN NUBE / LOCAL
 // ----------------------------------------------------------------------------
-
-// Obtener todos los consumibles
-app.get('/api/consumibles', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM consumibles ORDER BY CAST(id AS UNSIGNED) ASC');
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Guardar o actualizar consumible
-app.post('/api/consumibles', async (req, res) => {
-  const { id, item, categoria, entrada_inicial, entrada, salida, stock, min_stock, ubicacion } = req.body;
-  try {
-    const query = `
-      INSERT INTO consumibles (id, item, categoria, entrada_inicial, entrada, salida, stock, min_stock, ubicacion)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        item = VALUES(item),
-        categoria = VALUES(categoria),
-        entrada_inicial = VALUES(entrada_inicial),
-        entrada = VALUES(entrada),
-        salida = VALUES(salida),
-        stock = VALUES(stock),
-        min_stock = VALUES(min_stock),
-        ubicacion = VALUES(ubicacion)
-    `;
-    await db.query(query, [id, item, categoria, entrada_inicial || 0, entrada || 0, salida || 0, stock, min_stock || 3, ubicacion || 'Almacén Principal']);
-    res.json({ success: true, message: 'Consumible guardado exitosamente' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Eliminar consumible
-app.delete('/api/consumibles/:id', async (req, res) => {
-  try {
-    await db.query('DELETE FROM consumibles WHERE id = ?', [req.params.id]);
-    res.json({ success: true, message: 'Consumible eliminado' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ----------------------------------------------------------------------------
-// RUTAS REST API - EQUIPOS SERIALIZADOS
-// ----------------------------------------------------------------------------
-
-// Obtener todos los equipos serializados
-app.get('/api/serials', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM equipos_serializados ORDER BY created_at DESC');
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Guardar equipo serializado
-app.post('/api/serials', async (req, res) => {
-  const { serial, item_id, tipo, marca, modelo, estado, asignado_a, ubicacion } = req.body;
-  try {
-    const query = `
-      INSERT INTO equipos_serializados (serial, item_id, tipo, marca, modelo, estado, asignado_a, ubicacion)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        tipo = VALUES(tipo),
-        marca = VALUES(marca),
-        modelo = VALUES(modelo),
-        estado = VALUES(estado),
-        asignado_a = VALUES(asignado_a),
-        ubicacion = VALUES(ubicacion)
-    `;
-    await db.query(query, [serial, item_id, tipo, marca, modelo, estado || 'Disponible', asignado_a || '-', ubicacion || 'Almacén Principal']);
-    res.json({ success: true, message: 'Equipo por serial guardado' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Eliminar equipo serializado
-app.delete('/api/serials/:serial', async (req, res) => {
-  try {
-    await db.query('DELETE FROM equipos_serializados WHERE serial = ?', [req.params.serial]);
-    res.json({ success: true, message: 'Equipo eliminado' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ----------------------------------------------------------------------------
-// RUTAS REST API - HISTORIAL DE MOVIMIENTOS
-// ----------------------------------------------------------------------------
-app.get('/api/movimientos', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM movimientos_historial ORDER BY fecha_hora DESC LIMIT 200');
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/movimientos', async (req, res) => {
-  const { item_id, item_nombre, tipo_operacion, cambio, stock_resultante, notas } = req.body;
-  try {
-    await db.query(
-      'INSERT INTO movimientos_historial (item_id, item_nombre, tipo_operacion, cambio, stock_resultante, notas) VALUES (?, ?, ?, ?, ?, ?)',
-      [item_id, item_nombre, tipo_operacion, cambio, stock_resultante, notas]
-    );
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-const os = require('os');
-
-// Helper para inicialización automática completa de la base de datos en la Nube
 async function initDatabaseSchema() {
-
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS consumibles (
@@ -205,11 +97,122 @@ async function initDatabaseSchema() {
       console.log('👤 Usuario admin/admin123 inicializado correctamente.');
     }
   } catch (err) {
-    console.warn('⚠️ Estado de inicialización MySQL:', err.message);
+    console.warn('⚠️ Estado de base de datos:', err.message);
   }
 }
+
 initDatabaseSchema();
 
+// ----------------------------------------------------------------------------
+// RUTAS REST API - INVENTARIO GENERAL
+// ----------------------------------------------------------------------------
+app.get('/api/consumibles', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM consumibles ORDER BY CAST(id AS UNSIGNED) ASC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/consumibles', async (req, res) => {
+  const { id, item, categoria, entrada_inicial, entrada, salida, stock, min_stock, ubicacion } = req.body;
+  try {
+    const query = `
+      INSERT INTO consumibles (id, item, categoria, entrada_inicial, entrada, salida, stock, min_stock, ubicacion)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        item = VALUES(item),
+        categoria = VALUES(categoria),
+        entrada_inicial = VALUES(entrada_inicial),
+        entrada = VALUES(entrada),
+        salida = VALUES(salida),
+        stock = VALUES(stock),
+        min_stock = VALUES(min_stock),
+        ubicacion = VALUES(ubicacion)
+    `;
+    await db.query(query, [id, item, categoria, entrada_inicial || 0, entrada || 0, salida || 0, stock, min_stock || 3, ubicacion || 'Almacén Principal']);
+    res.json({ success: true, message: 'Consumible guardado exitosamente' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/consumibles/:id', async (req, res) => {
+  try {
+    await db.query('DELETE FROM consumibles WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Consumible eliminado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// RUTAS REST API - EQUIPOS SERIALIZADOS
+// ----------------------------------------------------------------------------
+app.get('/api/serials', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM equipos_serializados ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/serials', async (req, res) => {
+  const { serial, item_id, tipo, marca, modelo, estado, asignado_a, ubicacion } = req.body;
+  try {
+    const query = `
+      INSERT INTO equipos_serializados (serial, item_id, tipo, marca, modelo, estado, asignado_a, ubicacion)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        tipo = VALUES(tipo),
+        marca = VALUES(marca),
+        modelo = VALUES(modelo),
+        estado = VALUES(estado),
+        asignado_a = VALUES(asignado_a),
+        ubicacion = VALUES(ubicacion)
+    `;
+    await db.query(query, [serial, item_id, tipo, marca, modelo, estado || 'Disponible', asignado_a || '-', ubicacion || 'Almacén Principal']);
+    res.json({ success: true, message: 'Equipo por serial guardado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/serials/:serial', async (req, res) => {
+  try {
+    await db.query('DELETE FROM equipos_serializados WHERE serial = ?', [req.params.serial]);
+    res.json({ success: true, message: 'Equipo eliminado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// RUTAS REST API - HISTORIAL DE MOVIMIENTOS
+// ----------------------------------------------------------------------------
+app.get('/api/movimientos', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM movimientos_historial ORDER BY fecha_hora DESC LIMIT 200');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/movimientos', async (req, res) => {
+  const { item_id, item_nombre, tipo_operacion, cambio, stock_resultante, notas } = req.body;
+  try {
+    await db.query(
+      'INSERT INTO movimientos_historial (item_id, item_nombre, tipo_operacion, cambio, stock_resultante, notas) VALUES (?, ?, ?, ?, ?, ?)',
+      [item_id, item_nombre, tipo_operacion, cambio, stock_resultante, notas]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ----------------------------------------------------------------------------
 // RUTAS REST API - AUTENTICACIÓN Y LOGIN
@@ -264,16 +267,20 @@ app.get('*', (req, res) => {
 });
 
 function getLocalIpAddresses() {
-  const interfaces = os.networkInterfaces();
-  const addresses = [];
-  for (const k in interfaces) {
-    for (const k2 of interfaces[k]) {
-      if (k2.family === 'IPv4' && !k2.internal) {
-        addresses.push(k2.address);
+  try {
+    const interfaces = os.networkInterfaces();
+    const addresses = [];
+    for (const k in interfaces) {
+      for (const k2 of interfaces[k]) {
+        if (k2.family === 'IPv4' && !k2.internal) {
+          addresses.push(k2.address);
+        }
       }
     }
+    return addresses;
+  } catch (e) {
+    return [];
   }
-  return addresses;
 }
 
 app.listen(PORT, '0.0.0.0', () => {
@@ -288,4 +295,3 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔒 Control de Acceso: LOGIN ACTIVO (admin / admin123)`);
   console.log(`=============================================================\n`);
 });
-
