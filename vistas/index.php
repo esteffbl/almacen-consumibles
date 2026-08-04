@@ -38,9 +38,17 @@ $dbSerials = EquipoSerial::obtenerTodos();
     </script>
 </head>
 <body>
+    <script>
+        // Evita el parpadeo de la pantalla de login si el usuario ya inició sesión
+        if (!localStorage.getItem('qr_app_user')) {
+            document.documentElement.classList.add('show-login-initially');
+        }
+    </script>
+
     <!-- Login Screen Overlay -->
-    <div id="login-screen" class="login-overlay active">
+    <div id="login-screen" class="login-overlay">
         <div class="login-card">
+
             <div class="login-header">
                 <div class="login-logo">
                     <i data-lucide="shield-check"></i>
@@ -78,11 +86,11 @@ $dbSerials = EquipoSerial::obtenerTodos();
         <div class="header-container">
             <div class="brand">
                 <div class="logo-icon">
-                    <i data-lucide="qr-code"></i>
+                    <i data-lucide="box"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>QR Inventory Pro</h1>
-                    <span>Almacén de Consumibles TI</span>
+                    <h1>Almacén TI</h1>
+                    <span>Gestión de Consumibles & Equipos</span>
                 </div>
             </div>
 
@@ -113,23 +121,21 @@ $dbSerials = EquipoSerial::obtenerTodos();
 
             <!-- Action Controls -->
             <div class="header-actions">
-                <div class="user-badge" id="user-badge" style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 6px 12px; background: rgba(99, 102, 241, 0.12); color: var(--primary); border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.25);">
-                    <i data-lucide="user-check" style="width: 16px; height: 16px;"></i> <span id="current-user-name">Admin</span>
+                <div class="user-badge" id="user-badge">
+                    <i data-lucide="user-check"></i> <span id="current-user-name">Admin</span>
                 </div>
-                <button class="btn btn-outline" id="btn-theme-toggle" title="Cambiar Tema (Oscuro/Claro)">
+                <button class="btn btn-icon btn-outline" id="btn-theme-toggle" title="Cambiar Tema (Oscuro/Claro)">
                     <i data-lucide="moon" id="icon-theme"></i>
                 </button>
-                <button class="btn btn-outline" id="btn-export-excel" title="Exportar Excel Oficial">
-                    <i data-lucide="file-spreadsheet"></i> Exportar Excel
+                <button class="btn btn-outline btn-sm" id="btn-export-excel" title="Exportar Excel Oficial">
+                    <i data-lucide="file-spreadsheet"></i> Exportar
                 </button>
-                <button class="btn btn-primary" id="btn-new-item">
-                    <i data-lucide="plus"></i> Nuevo Consumible
-                </button>
-                <button class="btn btn-danger" id="btn-logout" title="Cerrar Sesión">
+                <button class="btn btn-danger btn-sm" id="btn-logout" title="Cerrar Sesión">
                     <i data-lucide="log-out"></i> Salir
                 </button>
             </div>
         </div>
+
 
 
         <!-- Navigation Tabs -->
@@ -183,8 +189,12 @@ $dbSerials = EquipoSerial::obtenerTodos();
                         <option value="OUT">❌ Agotado</option>
                     </select>
 
-                    <button class="btn btn-primary" id="btn-print-inventory-list">
-                        <i data-lucide="printer"></i> Imprimir Lista de Inventario
+                    <button class="btn btn-primary" id="btn-new-item">
+                        <i data-lucide="plus"></i> Nuevo Consumible
+                    </button>
+
+                    <button class="btn btn-secondary" id="btn-print-inventory-list">
+                        <i data-lucide="printer"></i> Imprimir Lista
                     </button>
 
                     <div class="view-toggle">
@@ -195,6 +205,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
                             <i data-lucide="list"></i>
                         </button>
                     </div>
+
                 </div>
             </div>
 
@@ -926,7 +937,12 @@ $dbSerials = EquipoSerial::obtenerTodos();
                     <div class="form-row">
                         <div class="form-group col-6">
                             <label for="form-serial-code">Número de Serial (Único) *</label>
-                            <input type="text" id="form-serial-code" required placeholder="Ej: SN-982138-AB">
+                            <div class="input-with-button">
+                                <input type="text" id="form-serial-code" required placeholder="Ej: SN-982138-AB">
+                                <button type="button" class="btn btn-outline" id="btn-scan-serial-modal" title="Escanear Código de Barras o Serial de la Caja con la Cámara">
+                                    <i data-lucide="camera"></i> Escanear
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group col-6">
                             <label for="form-serial-itemid">Consumible / Equipo *</label>

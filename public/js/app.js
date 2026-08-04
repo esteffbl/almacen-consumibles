@@ -142,7 +142,10 @@ function checkUserSession() {
     try {
       const userObj = JSON.parse(savedUser);
       if (userBadgeName) userBadgeName.textContent = userObj.nombre || userObj.usuario;
-      if (loginScreen) loginScreen.classList.remove('active');
+      if (loginScreen) {
+        loginScreen.classList.remove('active');
+        document.documentElement.classList.remove('show-login-initially');
+      }
     } catch (e) {
       if (loginScreen) loginScreen.classList.add('active');
     }
@@ -150,6 +153,7 @@ function checkUserSession() {
     if (loginScreen) loginScreen.classList.add('active');
   }
 }
+
 
 
 function initLucideIcons() {
@@ -293,9 +297,16 @@ function applyTheme(theme) {
 }
 
 function setupEventListeners() {
+  document.getElementById('btn-scan-serial-modal')?.addEventListener('click', () => {
+    closeSerialModal();
+    switchTab('tab-scanner');
+    startCameraScanner();
+  });
+
   document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
     applyTheme(state.theme === 'dark' ? 'light' : 'dark');
   });
+
 
   // Cambio automático de cargo al seleccionar Solicitante
   document.getElementById('movement-person')?.addEventListener('change', (e) => {
