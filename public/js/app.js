@@ -781,20 +781,28 @@ function openMovementModal(itemId, defaultType = 'ENTRADA') {
   state.activeItemForStock = item;
   
   const elId = document.getElementById('movement-item-id');
-  const elTitle = document.getElementById('movement-item-title');
-  const elBadge = document.getElementById('movement-item-id-badge');
-  const elIni = document.getElementById('movement-item-initial');
-  const elIn = document.getElementById('movement-item-in');
-  const elOut = document.getElementById('movement-item-out');
-  const elStock = document.getElementById('movement-item-stock');
+  document.getElementById('movement-item-id').value = item.id;
+  if (document.getElementById('movement-history-index')) {
+    document.getElementById('movement-history-index').value = -1;
+  }
 
-  if (elId) elId.value = item.id;
-  if (elTitle) elTitle.textContent = item.item;
-  if (elBadge) elBadge.textContent = `Ruta: #${item.id}`;
-  if (elIni) elIni.textContent = item.entradaInicial || 0;
-  if (elIn) elIn.textContent = item.entrada || 0;
-  if (elOut) elOut.textContent = item.salida || 0;
-  if (elStock) elStock.textContent = item.stock || 0;
+  const titleEl = document.getElementById('movement-item-title');
+  if (titleEl) titleEl.textContent = item.item;
+
+  const badgeEl = document.getElementById('movement-item-id-badge');
+  if (badgeEl) badgeEl.textContent = `Ruta: #${item.id}`;
+
+  const initEl = document.getElementById('movement-item-initial');
+  if (initEl) initEl.textContent = item.entradaInicial || 0;
+
+  const inEl = document.getElementById('movement-item-in');
+  if (inEl) inEl.textContent = item.entrada || 0;
+
+  const outEl = document.getElementById('movement-item-out');
+  if (outEl) outEl.textContent = item.salida || 0;
+
+  const stockEl = document.getElementById('movement-item-stock');
+  if (stockEl) stockEl.textContent = item.stock || 0;
 
   const selectType = document.getElementById('movement-type');
   if (selectType) selectType.value = defaultType;
@@ -810,7 +818,8 @@ function openMovementModal(itemId, defaultType = 'ENTRADA') {
   if (document.getElementById('movement-marca')) document.getElementById('movement-marca').value = 'S/M';
   if (document.getElementById('movement-modelo')) document.getElementById('movement-modelo').value = 'S/M';
   if (document.getElementById('movement-ref')) document.getElementById('movement-ref').value = '';
-  if (document.getElementById('movement-notes')) document.getElementById('movement-notes').value = 'SUMINISTRO DE CONSUMIBLES';
+  if (document.getElementById('movement-motivo')) document.getElementById('movement-motivo').value = 'SUMINISTRO DE CONSUMIBLES';
+  if (document.getElementById('movement-notes')) document.getElementById('movement-notes').value = 's/o';
 
   const modalTitle = document.getElementById('movement-modal-title');
   if (modalTitle) {
@@ -831,6 +840,7 @@ function closeMovementModal() {
 function handleSaveMovement(e) {
   e.preventDefault();
   const itemId = document.getElementById('movement-item-id').value;
+  const historyIndex = parseInt(document.getElementById('movement-history-index')?.value, 10);
   const item = state.items.find(i => String(i.id) === String(itemId));
   if (!item) return;
 
@@ -840,20 +850,14 @@ function handleSaveMovement(e) {
   const cargo = document.getElementById('movement-cargo')?.value.trim() || PERSONA_CARGOS[person] || 'ANALISTA DE SOPORTE USUARIO';
   const dept = document.getElementById('movement-dept').value.trim() || 'GERENCIA DE TI';
   const analista = document.getElementById('movement-analista')?.value || 'ESTEFANY BRUZUAL';
-  const marca = document.getElementById('movement-marca')?.value.trim() || 'S/M';
-  const modelo = document.getElementById('movement-modelo')?.value.trim() || 'S/M';
+  const marca = document.getElementById('movement-marca').value.trim() || 'S/M';
+  const modelo = document.getElementById('movement-modelo').value.trim() || 'S/M';
   const ref = document.getElementById('movement-ref').value.trim();
-  const notes = document.getElementById('movement-notes').value.trim() || 'SUMINISTRO DE CONSUMIBLES';
+  const motivo = document.getElementById('movement-motivo')?.value.trim() || 'SUMINISTRO DE CONSUMIBLES';
+  const notes = document.getElementById('movement-notes')?.value.trim() || 's/o';
 
   if (qty <= 0) {
     alert('La cantidad ingresada debe ser mayor a 0.');
-    return;
-  }
-
-  const currentStock = Number(item.stock || 0);
-
-  if (type === 'SALIDA' && qty > currentStock) {
-    alert(`❌ No puedes despachar ${qty} unidad(es). El stock disponible de "${item.item}" es de ${currentStock} unidad(es).`);
     return;
   }
 
@@ -861,39 +865,71 @@ function handleSaveMovement(e) {
   let ent = Number(item.entrada || 0);
   let sal = Number(item.salida || 0);
 
+  if (historyIndex >= 0 && state.history[historyIndex]) {
+    const oldRec = state.history[historyIndex];
+    const oldDetail = oldRec.detail || {};
+    const oldType = oldDetail.type || (oldRec.type.includes('Salida') ? 'SALIDA' : 'ENTRADA');
+    const oldQty = oldDetail.qty || Math.abs(parseInt(oldRec.change, 10) || 0);
+
+    if (oldType === 'ENTRADA') {
+      ent = Math.max(0, ent - oldQty);
+    } else {
+      sal = Math.max(0, sal - oldQty);
+    }
+  }
+
+  const currentStockTemp = Math.max(0, ini + ent - sal);
+  if (type === 'SALIDA' && qty > currentStockTemp) {
+    alert(`❌ No puedes despachar ${qty} unidad(es). El stock disponible de "${item.item}" es de ${currentStockTemp} unidad(es).`);
+    return;
+  }
+
   if (type === 'ENTRADA') {
     ent += qty;
   } else {
     sal += qty;
   }
 
-  const newStock = ini + ent - sal;
+  const newStock = Math.max(0, ini + ent - sal);
   item.entrada = ent;
   item.salida = sal;
-  item.stock = Math.max(0, newStock);
+  item.stock = newStock;
 
   const detailObj = {
-    person, cargo, dept, analista, marca, modelo, ref, notes, qty, type,
+    person, cargo, dept, analista, marca, modelo, ref, motivo, notes, qty, type,
     itemName: item.item
   };
 
-  const metaStr = `${type} | ${person} (${cargo}) | ${dept} | Analista: ${analista} | Ref: ${ref || 'S/N'}`;
-
+  const metaStr = `${type} | Motivo: ${motivo} | ${person} (${cargo}) | ${dept} | Ref: ${ref || 'S/N'}`;
   const opLabel = type === 'ENTRADA' ? 'Entrada (+)' : 'Salida (-)';
   const delta = type === 'ENTRADA' ? qty : -qty;
 
-  logMovement(item.id, item.item, opLabel, delta, item.stock, metaStr, detailObj);
+  if (historyIndex >= 0 && state.history[historyIndex]) {
+    state.history[historyIndex].type = opLabel;
+    state.history[historyIndex].change = delta > 0 ? `+${delta}` : `${delta}`;
+    state.history[historyIndex].finalStock = item.stock;
+    state.history[historyIndex].notes = metaStr;
+    state.history[historyIndex].detail = detailObj;
+    saveHistory();
+  } else {
+    logMovement(item.id, item.item, opLabel, delta, item.stock, metaStr, detailObj);
+  }
+
   saveData();
   renderAll();
   closeMovementModal();
 
-  // Abrir inmediatamente la Planilla Oficial Generada
   openPlanillaModal(detailObj);
 }
 
 function openPlanillaModal(data) {
   const modal = document.getElementById('modal-planilla-oficial');
   if (!modal) return;
+
+  const imgLogo = document.querySelector('#printable-planilla-content img') || document.getElementById('plan-header-logo-img');
+  if (imgLogo && window.HEADER_LOGO_BASE64) {
+    imgLogo.src = window.HEADER_LOGO_BASE64;
+  }
 
   const isEntrada = data.type === 'ENTRADA';
   const docTitle = document.getElementById('plan-doc-title');
@@ -907,14 +943,16 @@ function openPlanillaModal(data) {
   if (document.getElementById('plan-solicitante-nombre')) document.getElementById('plan-solicitante-nombre').textContent = solicNombre;
   if (document.getElementById('plan-solicitante-cargo')) document.getElementById('plan-solicitante-cargo').textContent = solicCargo;
   if (document.getElementById('plan-solicitante-gerencia')) document.getElementById('plan-solicitante-gerencia').textContent = data.dept || 'GERENCIA DE TI';
-  if (document.getElementById('plan-solicitante-motivo')) document.getElementById('plan-solicitante-motivo').textContent = data.notes || 'S/M';
+  if (document.getElementById('plan-solicitante-motivo')) document.getElementById('plan-solicitante-motivo').textContent = data.motivo || data.notes || 'SUMINISTRO DE CONSUMIBLES';
 
   if (document.getElementById('plan-item-desc')) document.getElementById('plan-item-desc').textContent = data.itemName || 'TONER IMPRESORA RICOH IM4000';
   if (document.getElementById('plan-item-marca')) document.getElementById('plan-item-marca').textContent = data.marca || 'S/M';
   if (document.getElementById('plan-item-modelo')) document.getElementById('plan-item-modelo').textContent = data.modelo || 'S/M';
-  if (document.getElementById('plan-item-obs')) document.getElementById('plan-item-obs').textContent = data.ref ? `Doc: ${data.ref}` : 's/o';
+  if (document.getElementById('plan-item-obs')) document.getElementById('plan-item-obs').textContent = data.notes || (data.ref ? `Doc: ${data.ref}` : 's/o');
   if (document.getElementById('plan-item-cant')) document.getElementById('plan-item-cant').textContent = data.qty || 1;
   if (document.getElementById('plan-item-total')) document.getElementById('plan-item-total').textContent = data.qty || 1;
+
+  if (document.getElementById('plan-footer-obs')) document.getElementById('plan-footer-obs').textContent = data.notes || 's/o';
 
   if (document.getElementById('plan-firma-solic-nombre')) document.getElementById('plan-firma-solic-nombre').textContent = solicNombre;
 
@@ -933,6 +971,190 @@ function openPlanillaModal(data) {
 
 function closePlanillaModal() {
   document.getElementById('modal-planilla-oficial')?.classList.add('hidden');
+}
+
+function renderHistory() {
+  const tableBody = document.getElementById('history-table-body');
+  const emptyState = document.getElementById('empty-history-state');
+  if (!tableBody) return;
+
+  if (state.history.length === 0) {
+    tableBody.innerHTML = '';
+    emptyState?.classList.remove('hidden');
+    return;
+  }
+
+  emptyState?.classList.add('hidden');
+  tableBody.innerHTML = state.history.map((h, idx) => {
+    const formattedDate = new Date(h.timestamp).toLocaleString();
+    let badgeClass = 'badge-success';
+    if (h.type.includes('Salida') || h.type.includes('Eliminación')) {
+      badgeClass = 'badge-danger';
+    } else if (h.type.includes('Edición') || h.type.includes('Serial')) {
+      badgeClass = 'badge-warning';
+    }
+
+    return `
+      <tr>
+        <td><small style="color: var(--text-muted);">${formattedDate}</small></td>
+        <td><strong>#${h.id}</strong></td>
+        <td>${escapeHtml(h.item)}</td>
+        <td><span class="badge ${badgeClass}">${h.type}</span></td>
+        <td><strong>${h.change}</strong></td>
+        <td>${h.finalStock}</td>
+        <td><small>${escapeHtml(h.notes || '-')}</small></td>
+        <td class="text-right">
+          <div style="display:flex; justify-content:flex-end; gap:0.3rem;">
+            <button class="btn btn-icon btn-sm" onclick="verPlanillaFromHistoryIndex(${idx})" title="Ver / Imprimir Planilla">
+              <i data-lucide="file-text" style="color:var(--accent-primary);"></i>
+            </button>
+            <button class="btn btn-icon btn-sm" onclick="editarMovimientoFromHistoryIndex(${idx})" title="Editar este movimiento">
+              <i data-lucide="edit" style="color:#f59e0b;"></i>
+            </button>
+            <button class="btn btn-icon btn-sm" onclick="eliminarMovimientoFromHistoryIndex(${idx})" title="Eliminar este movimiento">
+              <i data-lucide="trash-2" style="color:#ef4444;"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  initLucideIcons();
+}
+
+function verPlanillaFromHistoryIndex(idx) {
+  const h = state.history[idx];
+  if (!h) return;
+
+  const detailData = h.detail || {
+    person: 'BALDASSARE CLEMENTI',
+    cargo: PERSONA_CARGOS['BALDASSARE CLEMENTI'] || 'ANALISTA DE SOPORTE USUARIO',
+    dept: 'GERENCIA DE TI',
+    analista: 'ESTEFANY BRUZUAL',
+    marca: 'S/M',
+    modelo: 'S/M',
+    ref: '',
+    motivo: h.notes || 'SUMINISTRO DE CONSUMIBLES',
+    notes: 's/o',
+    qty: Math.abs(parseInt(h.change, 10) || 1),
+    type: h.type.includes('Salida') ? 'SALIDA' : 'ENTRADA',
+    itemName: h.item
+  };
+
+  openPlanillaModal(detailData);
+}
+
+function editarMovimientoFromHistoryIndex(idx) {
+  const h = state.history[idx];
+  if (!h) return;
+
+  const item = state.items.find(i => String(i.id) === String(h.id));
+  if (!item) {
+    alert(`No se encontró el consumible asociado a este movimiento (ID: #${h.id}).`);
+    return;
+  }
+
+  state.activeItemForStock = item;
+  document.getElementById('movement-item-id').value = item.id;
+  if (document.getElementById('movement-history-index')) {
+    document.getElementById('movement-history-index').value = idx;
+  }
+
+  const titleEl = document.getElementById('movement-item-title');
+  if (titleEl) titleEl.textContent = item.item;
+
+  const badgeEl = document.getElementById('movement-item-id-badge');
+  if (badgeEl) badgeEl.textContent = `Ruta: #${item.id}`;
+
+  const initEl = document.getElementById('movement-item-initial');
+  if (initEl) initEl.textContent = item.entradaInicial || 0;
+
+  const inEl = document.getElementById('movement-item-in');
+  if (inEl) inEl.textContent = item.entrada || 0;
+
+  const outEl = document.getElementById('movement-item-out');
+  if (outEl) outEl.textContent = item.salida || 0;
+
+  const stockEl = document.getElementById('movement-item-stock');
+  if (stockEl) stockEl.textContent = item.stock || 0;
+
+  const detail = h.detail || {
+    person: 'BALDASSARE CLEMENTI',
+    cargo: PERSONA_CARGOS['BALDASSARE CLEMENTI'] || 'ANALISTA DE SOPORTE USUARIO',
+    dept: 'GERENCIA DE TI',
+    analista: 'ESTEFANY BRUZUAL',
+    marca: 'S/M',
+    modelo: 'S/M',
+    ref: '',
+    motivo: 'SUMINISTRO DE CONSUMIBLES',
+    notes: 's/o',
+    qty: Math.abs(parseInt(h.change, 10) || 1),
+    type: h.type.includes('Salida') ? 'SALIDA' : 'ENTRADA'
+  };
+
+  const selectType = document.getElementById('movement-type');
+  if (selectType) selectType.value = detail.type || (h.type.includes('Salida') ? 'SALIDA' : 'ENTRADA');
+
+  const qtyInput = document.getElementById('movement-qty');
+  if (qtyInput) qtyInput.value = detail.qty || Math.abs(parseInt(h.change, 10) || 1);
+
+  if (document.getElementById('movement-person')) document.getElementById('movement-person').value = detail.person || 'BALDASSARE CLEMENTI';
+  if (document.getElementById('movement-cargo')) document.getElementById('movement-cargo').value = detail.cargo || PERSONA_CARGOS[detail.person] || 'ANALISTA DE SOPORTE USUARIO';
+  if (document.getElementById('movement-dept')) document.getElementById('movement-dept').value = detail.dept || 'GERENCIA DE TI';
+  if (document.getElementById('movement-analista')) document.getElementById('movement-analista').value = detail.analista || 'ESTEFANY BRUZUAL';
+  if (document.getElementById('movement-marca')) document.getElementById('movement-marca').value = detail.marca || 'S/M';
+  if (document.getElementById('movement-modelo')) document.getElementById('movement-modelo').value = detail.modelo || 'S/M';
+  if (document.getElementById('movement-ref')) document.getElementById('movement-ref').value = detail.ref || '';
+  if (document.getElementById('movement-motivo')) document.getElementById('movement-motivo').value = detail.motivo || 'SUMINISTRO DE CONSUMIBLES';
+  if (document.getElementById('movement-notes')) document.getElementById('movement-notes').value = detail.notes || 's/o';
+
+  const modalTitle = document.getElementById('movement-modal-title');
+  if (modalTitle) {
+    modalTitle.innerHTML = '<i data-lucide="edit" style="color:#f59e0b;"></i> Editar Movimiento de Inventario';
+  }
+
+  document.getElementById('modal-movement')?.classList.remove('hidden');
+  initLucideIcons();
+}
+
+function eliminarMovimientoFromHistoryIndex(idx) {
+  const h = state.history[idx];
+  if (!h) return;
+
+  if (!confirm(`¿Estás seguro de eliminar este registro de movimiento del historial?\n\n• Consumible: #${h.id} - ${h.item}\n• Cambio: ${h.change}\n• Detalle: ${h.notes || '-'}`)) {
+    return;
+  }
+
+  const revertStock = confirm(`¿Deseas también revertir el cambio de stock de este movimiento en el inventario?\n\n(Aceptar = Revertir stock de "${h.item}" | Cancelar = Eliminar solo el registro del historial)`);
+
+  if (revertStock) {
+    const item = state.items.find(i => String(i.id) === String(h.id));
+    if (item) {
+      const detail = h.detail || {};
+      const type = detail.type || (h.type.includes('Salida') ? 'SALIDA' : 'ENTRADA');
+      const qty = detail.qty || Math.abs(parseInt(h.change, 10) || 0);
+
+      let ini = Number(item.entradaInicial || 0);
+      let ent = Number(item.entrada || 0);
+      let sal = Number(item.salida || 0);
+
+      if (type === 'ENTRADA') {
+        ent = Math.max(0, ent - qty);
+      } else {
+        sal = Math.max(0, sal - qty);
+      }
+
+      item.entrada = ent;
+      item.salida = sal;
+      item.stock = Math.max(0, ini + ent - sal);
+      saveData();
+    }
+  }
+
+  state.history.splice(idx, 1);
+  saveHistory();
+  renderAll();
 }
 
 function calculateFormStock() {
@@ -1123,67 +1345,254 @@ function renderSerials() {
   initLucideIcons();
 }
 
+function preprocessImageCanvas(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1600;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        try {
+          const imgData = ctx.getImageData(0, 0, width, height);
+          const data = imgData.data;
+
+          const contrast = 1.3;
+          const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+
+          for (let i = 0; i < data.length; i += 4) {
+            let gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            gray = factor * (gray - 128) + 128;
+            if (gray < 0) gray = 0;
+            if (gray > 255) gray = 255;
+            data[i] = gray;
+            data[i + 1] = gray;
+            data[i + 2] = gray;
+          }
+          ctx.putImageData(imgData, 0, 0);
+        } catch (err) {
+          console.warn("No se pudo aplicar contraste en canvas:", err);
+        }
+
+        canvas.toBlob((blob) => {
+          resolve(blob || file);
+        }, 'image/jpeg', 0.92);
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 function parseLabelText(rawText) {
   if (!rawText) return { serial: '', brand: '', model: '' };
 
-  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  let cleanedText = rawText
+    .replace(/(\r\n|\r|\n)+/g, '\n')
+    .replace(/[iI]nput\s*:[^\n]+/gi, '')
+    .replace(/made\s*in\s*[a-z\s]+/gi, '');
+
+  const lines = cleanedText.split('\n').map(l => l.trim()).filter(Boolean);
+  const fullUpper = cleanedText.toUpperCase();
+
   let serial = '';
   let brand = '';
   let model = '';
 
-  const knownBrands = [
-    'HP', 'HEWLETT PACKARD', 'LENOVO', 'DELL', 'CISCO', 'RICOH', 'EPSON',
-    'CANON', 'KINGSTON', 'SAMSUNG', 'LG', 'COMPAQ', 'BROTHER', 'PANASONIC',
-    'SONY', 'ACER', 'ASUS', 'INTEL', 'AMD', 'NVIDIA', 'DAHUA', 'UBIQUITI',
-    'FORTINET', 'MIKROTIK', 'TRIPP-LITE', 'TRIPPLITE', 'LOGITECH', 'ZEBRA'
+  // 1. DETECCIÓN DE MARCA
+  const brandDefinitions = [
+    { name: 'HP', regex: /\b(HP|HEWLETT\s*[-]?\s*PACKARD)\b/i },
+    { name: 'DELL', regex: /\bDELL\b/i },
+    { name: 'LENOVO', regex: /\bLENOVO\b/i },
+    { name: 'CISCO', regex: /\bCISCO\b/i },
+    { name: 'RICOH', regex: /\bRICOH\b/i },
+    { name: 'EPSON', regex: /\bEPSON\b/i },
+    { name: 'CANON', regex: /\bCANON\b/i },
+    { name: 'SAMSUNG', regex: /\bSAMSUNG\b/i },
+    { name: 'LG', regex: /\bLG\b/i },
+    { name: 'BROTHER', regex: /\bBROTHER\b/i },
+    { name: 'ZEBRA', regex: /\bZEBRA\b/i },
+    { name: 'DAHUA', regex: /\bDAHUA\b/i },
+    { name: 'HIKVISION', regex: /\bHIKVISION\b/i },
+    { name: 'UBIQUITI', regex: /\bUBIQUITI\b/i },
+    { name: 'FORTINET', regex: /\bFORTINET\b/i },
+    { name: 'MIKROTIK', regex: /\bMIKROTIK\b/i },
+    { name: 'TRIPP LITE', regex: /\b(TRIPP\s*[-]?\s*LITE|TRIPPLITE)\b/i },
+    { name: 'APC', regex: /\bAPC\b/i },
+    { name: 'KYOCERA', regex: /\bKYOCERA\b/i },
+    { name: 'LEXMARK', regex: /\bLEXMARK\b/i },
+    { name: 'XEROX', regex: /\bXEROX\b/i },
+    { name: 'LOGITECH', regex: /\bLOGITECH\b/i },
+    { name: 'ACER', regex: /\bACER\b/i },
+    { name: 'ASUS', regex: /\bASUS\b/i },
+    { name: 'TOSHIBA', regex: /\bTOSHIBA\b/i },
+    { name: 'SONY', regex: /\bSONY\b/i },
+    { name: 'PANASONIC', regex: /\bPANASONIC\b/i },
+    { name: 'HUAWEI', regex: /\bHUAWEI\b/i },
+    { name: 'TP-LINK', regex: /\b(TP\s*[-]?\s*LINK|TPLINK)\b/i },
+    { name: 'D-LINK', regex: /\b(D\s*[-]?\s*LINK|DLINK)\b/i },
+    { name: 'INTEL', regex: /\bINTEL\b/i },
+    { name: 'AMD', regex: /\bAMD\b/i },
+    { name: 'NVIDIA', regex: /\bNVIDIA\b/i },
+    { name: 'COMPAQ', regex: /\bCOMPAQ\b/i },
+    { name: 'KINGSTON', regex: /\bKINGSTON\b/i }
   ];
 
-  for (const line of lines) {
-    const upper = line.toUpperCase();
-    for (const b of knownBrands) {
-      const regex = new RegExp(`\\b${b}\\b`, 'i');
-      if (regex.test(upper)) {
-        brand = b === 'HEWLETT PACKARD' ? 'HP' : b;
+  for (const bDef of brandDefinitions) {
+    if (bDef.regex.test(fullUpper)) {
+      brand = bDef.name;
+      break;
+    }
+  }
+
+  // 2. DETECCIÓN DE SERIAL
+  const serialPatterns = [
+    /(?:SERVICE\s*TAG(?:\s*\(S\/N\))?|ST#?|S\/N\s*\/ST)\s*[:=.\-\s]+\s*([A-Z0-9]{5,15})/i,
+    /(?:SERIAL\s*(?:NO|NUM|NUMBER|\.)*|S\/N|S\/N\.|SN|SER\.?\s*NO|N\/S|NO\.?\s*SERIE|N°?\s*SERIE|SERNO|SER|TAG|CÓDIGO)\s*[:=.\-\s]+\s*([A-Z0-9\-_]{5,25})/i,
+    /(?:\(21\)|21)\s*([A-Z0-9\-_]{6,20})/i,
+    /\bS\/N\s*([A-Z0-9\-_]{6,20})/i
+  ];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    for (const pat of serialPatterns) {
+      const match = line.match(pat);
+      if (match && match[1]) {
+        let val = match[1].replace(/[^A-Z0-9\-_]/gi, '').toUpperCase();
+        if (val.length >= 5 && !/^(MONITOR|PRODUCT|OPTION|SPARE|MODEL|HEWLETT|PACKARD|CHINA|REVISION|SERVICE|SERIAL)$/i.test(val)) {
+          serial = val;
+          break;
+        }
+      }
+    }
+    if (serial) break;
+
+    if (/(?:SERIAL\s*(?:NO|NUMBER)?|S\/N|SN|SERVICE\s*TAG|ST#?)\s*[:=.\-]*$/i.test(line) && i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      const matchNext = nextLine.match(/^([A-Z0-9\-_]{5,25})$/i);
+      if (matchNext) {
+        serial = matchNext[1].toUpperCase();
         break;
       }
     }
-    if (brand) break;
   }
 
-  for (const line of lines) {
-    const snMatch = line.match(/(?:Serial\s*(?:No|Num|Number|\.)*|S\/N|SN)\s*[:.]?\s*([A-Z0-9-]{6,20})/i);
-    if (snMatch) {
-      serial = snMatch[1];
-      break;
+  // Patrones específicos de seriales por fabricante
+  if (!serial) {
+    const hpMatch = fullUpper.match(/\b([52][A-Z0-9]{9}|CND[A-Z0-9]{7}|CNU[A-Z0-9]{7}|MXL[A-Z0-9]{7}|JP[A-Z0-9]{8})\b/);
+    if (hpMatch) serial = hpMatch[1];
+  }
+
+  if (!serial) {
+    const dellMatch = fullUpper.match(/\b([B-Z0-9]{7})\b/);
+    if (dellMatch && brand === 'DELL' && !/^(BATTERY|ADAPTER|MONITOR)$/.test(dellMatch[1])) {
+      serial = dellMatch[1];
     }
   }
 
   if (!serial) {
+    const ciscoMatch = fullUpper.match(/\b(FOC[A-Z0-9]{8}|FCW[A-Z0-9]{8}|SAD[A-Z0-9]{8})\b/);
+    if (ciscoMatch) serial = ciscoMatch[1];
+  }
+
+  if (!serial) {
+    const noiseWords = ['MONITOR', 'COMPAQ', 'PRODUCT', 'OPTION', 'SPARE', 'MODEL', 'HEWLETT', 'PACKARD', 'CHINA', 'REVISION', 'PEQUIVEN', 'INVENTARIO', 'ALMACEN', 'PORTATIL', 'DESKTOP', 'LATITUDE', 'OPTIPLEX', 'PRODESK', 'THINKCENTRE', 'ECOTANK', 'LASERJET', 'INPUT', 'OUTPUT', 'SERIAL'];
     for (const line of lines) {
-      const match = line.match(/\b([A-Z0-9]{8,16})\b/);
-      if (match && !/MONITOR|COMPAQ|PRODUCT|OPTION|SPARE|MODEL|HEWLETT|PACKARD|CHINA|REVISION/i.test(match[1])) {
-        serial = match[1];
-        break;
+      const tokens = line.split(/\s+/);
+      for (const token of tokens) {
+        const cleanedToken = token.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        if (cleanedToken.length >= 7 && cleanedToken.length <= 18 && /\d/.test(cleanedToken) && /[A-Z]/.test(cleanedToken)) {
+          if (!noiseWords.some(w => cleanedToken.includes(w))) {
+            serial = cleanedToken;
+            break;
+          }
+        }
       }
+      if (serial) break;
     }
   }
 
-  for (const line of lines) {
-    const modelMatch = line.match(/(?:Model|Modelo|型号)\s*[:.]?\s*([A-Z0-9\s-]{3,25})/i);
-    if (modelMatch) {
-      model = modelMatch[1].replace(/Monitor|LCD|Product|China/gi, '').trim();
-      break;
+  // 3. DETECCIÓN DE MODELO
+  const modelPatterns = [
+    /(?:MODELO?|MODEL\s*(?:NO|NUM|NUMBER|\.)*|M\/N|MN|TYPE|TIPO|PRODUCT\s*(?:NAME|NO|\.)*|PRODUCTO)\s*[:=.\-\s]+\s*([A-Z0-9\s\-_/]{3,30})/i,
+    /(?:P\/N|PART\s*(?:NO|NUM|NUMBER|\.)*)\s*[:=.\-\s]+\s*([A-Z0-9\s\-_/]{3,25})/i
+  ];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    for (const pat of modelPatterns) {
+      const match = line.match(pat);
+      if (match && match[1]) {
+        let val = match[1].trim();
+        val = val.replace(/(?:MONITOR|LCD|PRODUCT|CHINA|MADE IN|INPUT|OUTPUT|SERIES|REGULATORY).*/gi, '').trim();
+        if (val.length >= 2 && !/^(MONITOR|LCD|PRODUCT|CHINA)$/i.test(val)) {
+          model = val;
+          break;
+        }
+      }
+    }
+    if (model) break;
+
+    if (/(?:MODELO?|MODEL\s*(?:NO|NUMBER)?|M\/N|PRODUCT\s*NAME)\s*[:=.\-]*$/i.test(line) && i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      if (nextLine.length >= 2 && nextLine.length <= 30) {
+        model = nextLine.replace(/(?:MONITOR|LCD|CHINA).*/gi, '').trim();
+        break;
+      }
     }
   }
 
   if (!model) {
+    const modelFamilies = [
+      'PRODESK', 'ELITEDESK', 'ELITEBOOK', 'PROBOOK', 'THINKCENTRE', 'THINKPAD',
+      'THINKSTATION', 'LATITUDE', 'OPTIPLEX', 'PRECISION', 'VOSTRO', 'INSPIRON',
+      'POWEREDGE', 'CATALYST', 'LASERJET', 'DESKJET', 'OFFICEJET', 'ECOTANK',
+      'SMART-UPS', 'SMARTUPS', 'IM 4000', 'IM4000', 'IM C300', 'IMC300',
+      'IDEAPAD', 'YOGA', 'LEGION', 'PAVILION', 'ZBOOK', 'OMEN'
+    ];
+
     for (const line of lines) {
-      if (/MONITOR|DESK|THINK|PROBOOK|LATITUDE|THINKCENTRE|LCD|PRODESK|COMPAQ/i.test(line)) {
-        model = line.replace(/^HP\s+/i, '').replace(/^DELL\s+/i, '').replace(/^LENOVO\s+/i, '').trim();
-        break;
+      const upperLine = line.toUpperCase();
+      for (const family of modelFamilies) {
+        if (upperLine.includes(family)) {
+          const idx = upperLine.indexOf(family);
+          let extracted = line.substring(idx).trim();
+          extracted = extracted.replace(/(?:S\/N|SN|SERIAL|INPUT|OUTPUT|MADE IN|CHINA).*/gi, '').trim();
+          if (extracted) {
+            model = extracted;
+            break;
+          }
+        }
       }
+      if (model) break;
     }
   }
+
+  if (serial) serial = serial.toUpperCase().trim();
+  if (brand) brand = brand.toUpperCase().trim();
+  if (model) model = model.toUpperCase().trim();
 
   return { serial, brand, model };
 }
@@ -1193,13 +1602,15 @@ async function processLabelImageOCR(file) {
 
   const alertToast = document.createElement('div');
   alertToast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;background:var(--accent-primary,#2563eb);color:#fff;padding:14px 22px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-weight:600;font-size:0.95rem;display:flex;align-items:center;gap:10px;';
-  alertToast.innerHTML = `<span>⏳</span> <span>Analizando foto de etiqueta con IA (Serial, Marca y Modelo)...</span>`;
+  alertToast.innerHTML = `<span>⏳</span> <span>Optimizando foto y leyendo etiqueta con IA (Serial, Marca y Modelo)...</span>`;
   document.body.appendChild(alertToast);
 
   try {
+    const preprocessedBlob = await preprocessImageCanvas(file);
     let rawText = '';
+
     if (typeof Tesseract !== 'undefined') {
-      const result = await Tesseract.recognize(file, 'eng');
+      const result = await Tesseract.recognize(preprocessedBlob, 'eng');
       rawText = result.data ? result.data.text || '' : '';
     }
 
@@ -1218,9 +1629,9 @@ async function processLabelImageOCR(file) {
     if (parsed.model && modeloInput) modeloInput.value = parsed.model;
 
     if (parsed.serial || parsed.brand || parsed.model) {
-      alert(`✅ Foto de Etiqueta Procesada:\n• Serial: ${parsed.serial || 'No detectado'}\n• Marca: ${parsed.brand || 'Auto'}\n• Modelo: ${parsed.model || 'Auto'}`);
+      alert(`✅ Foto de Etiqueta Leída Exitosamente:\n\n• Serial: ${parsed.serial || 'No detectado'}\n• Marca: ${parsed.brand || 'No detectada'}\n• Modelo: ${parsed.model || 'No detectado'}`);
     } else {
-      alert('ℹ️ Se tomó la foto pero no se identificó texto legible. Por favor verifica los datos.');
+      alert('ℹ️ Se procesó la foto pero no se identificó el texto del serial/marca/modelo. Por favor escríbelos manualmente en el formulario.');
     }
   } catch (err) {
     console.error("Error al procesar la foto de la etiqueta:", err);
