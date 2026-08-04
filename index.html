@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Inventory Pro - Almacén de Consumibles TI</title>
+    
+    <!-- Fonts & Web Libraries -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- SheetJS for Native Excel (.XLSX) Binary Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Custom Enterprise CSS -->
+    <link rel="stylesheet" href="estilos/styles.css">
+    <style>
+      /* Fallback inline stylesheet if CSS link varies */
+      .official-excel-sheet-preview { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 2.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 1rem; color: #000000; }
+      .excel-header-logos { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 0.75rem; margin-bottom: 1.5rem; font-size: 0.8rem; }
+      .logo-text-left { text-align: left; color: #333; line-height: 1.2; }
+      .logo-text-center { text-align: center; }
+      .pequiven-title { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 900; color: #b91c1c; letter-spacing: -0.5px; }
+      .logo-text-right { text-align: right; color: #d97706; font-weight: 800; font-size: 1.1rem; }
+      .excel-title-block { text-align: center; margin-bottom: 1.5rem; }
+      .excel-title-block h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.25rem; color: #000000; }
+      .excel-title-block h2 { font-size: 1rem; font-weight: 700; color: #333333; margin-bottom: 0.25rem; }
+      .excel-date { font-weight: 700; font-size: 0.95rem; color: #000000; }
+      .excel-table-wrapper { overflow-x: auto; }
+      .official-excel-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 0.85rem; }
+      .official-excel-table th { background-color: #d9e1f2; color: #000000; font-weight: 700; border: 1px solid #8ea9db; padding: 8px; text-align: center; text-transform: uppercase; font-size: 0.8rem; }
+      .official-excel-table td { border: 1px solid #d9d9d9; padding: 7px 10px; }
+      .official-excel-table td.cell-ruta { text-align: center; font-weight: 700; background-color: #f8fafc; }
+      .official-excel-table td.cell-name { font-weight: 700; text-align: left; }
+      .official-excel-table td.cell-num { text-align: center; }
+      .official-excel-table tr.stock-zero-row td.cell-stock { background-color: #ff6b6b !important; color: #ffffff !important; font-weight: 800; text-align: center; }
+      .official-excel-table td.cell-stock-normal { font-weight: 700; text-align: center; background-color: #e2efda; color: #276749; }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <header class="app-header no-print">
+        <div class="header-container">
+            <div class="brand">
+                <div class="logo-icon">
+                    <i data-lucide="qr-code"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>QR Inventory Pro</h1>
+                    <span>Almacén de Consumibles TI</span>
+                </div>
+            </div>
+
+            <!-- Header Quick Stats -->
+            <div class="header-stats">
+                <div class="stat-pill">
+                    <i data-lucide="box"></i>
+                    <div>
+                        <span id="stat-total-items">94</span>
+                        <small>Ítems</small>
+                    </div>
+                </div>
+                <div class="stat-pill">
+                    <i data-lucide="layers"></i>
+                    <div>
+                        <span id="stat-total-stock">0</span>
+                        <small>Stock Total</small>
+                    </div>
+                </div>
+                <div class="stat-pill warning" id="pill-low-stock">
+                    <i data-lucide="alert-triangle"></i>
+                    <div>
+                        <span id="stat-low-stock">0</span>
+                        <small>Stock Bajo</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="header-actions">
+                <button class="btn btn-icon" id="btn-theme-toggle" title="Cambiar Tema (Oscuro/Claro)">
+                    <i data-lucide="moon" id="icon-theme"></i>
+                </button>
+                <button class="btn btn-outline" id="btn-export-excel" title="Exportar Excel Oficial">
+                    <i data-lucide="file-spreadsheet"></i> Exportar Excel
+                </button>
+                <button class="btn btn-primary" id="btn-new-item">
+                    <i data-lucide="plus"></i> Nuevo Consumible
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="app-tabs">
+            <button class="tab-btn active" data-tab="tab-inventory">
+                <i data-lucide="layout-grid"></i> Inventario & Control
+            </button>
+            <button class="tab-btn" data-tab="tab-serials">
+                <i data-lucide="cpu"></i> Equipos en Almacén (Seriales)
+                <span class="badge badge-accent" id="badge-serials-count">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-report">
+                <i data-lucide="file-spreadsheet"></i> Reporte Oficial Excel
+            </button>
+            <button class="tab-btn" data-tab="tab-qr-labels">
+                <i data-lucide="printer"></i> Etiquetas QR & Impresión
+                <span class="badge badge-accent" id="badge-selected-count">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-scanner">
+                <i data-lucide="scan-line"></i> Escáner QR (Cámara/Lector)
+            </button>
+            <button class="tab-btn" data-tab="tab-history">
+                <i data-lucide="history"></i> Movimientos
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="app-content">
+
+        <!-- TAB 1: INVENTORY & STOCK CONTROL -->
+        <section id="tab-inventory" class="tab-content active no-print">
+            <div class="toolbar-card">
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="input-search" placeholder="Buscar consumible por nombre, ID o ubicación...">
+                    <button class="clear-search-btn" id="btn-clear-search" style="display:none;">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+
+                <div class="filter-controls">
+                    <select id="select-category" class="custom-select">
+                        <option value="ALL">Todas las Categorías</option>
+                    </select>
+
+                    <select id="select-stock-filter" class="custom-select">
+                        <option value="ALL">Todos los Estados</option>
+                        <option value="LOW">🚨 Stock Bajo / Alerta</option>
+                        <option value="NORMAL">✅ Stock Normal</option>
+                        <option value="OUT">❌ Agotado</option>
+                    </select>
+
+                    <div class="view-toggle">
+                        <button class="view-btn active" id="btn-view-cards" title="Vista de Tarjetas">
+                            <i data-lucide="grid"></i>
+                        </button>
+                        <button class="view-btn" id="btn-view-table" title="Vista de Tabla">
+                            <i data-lucide="list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bulk-action-bar hidden" id="bulk-action-bar">
+                <div class="bulk-info">
+                    <span id="bulk-selected-text">0 ítems seleccionados</span>
+                </div>
+                <div class="bulk-buttons">
+                    <button class="btn btn-sm btn-secondary" id="btn-select-all">Seleccionar Todos</button>
+                    <button class="btn btn-sm btn-outline" id="btn-deselect-all">Deseleccionar</button>
+                    <button class="btn btn-sm btn-primary" id="btn-go-to-print">
+                        <i data-lucide="printer"></i> Ir a Imprimir Etiquetas
+                    </button>
+                </div>
+            </div>
+
+            <div class="inventory-grid" id="inventory-container"></div>
+
+            <div class="inventory-table-container hidden" id="inventory-table-wrapper">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th width="40"><input type="checkbox" id="chk-select-all-table"></th>
+                            <th width="60">Ruta</th>
+                            <th>Consumible / Descripción</th>
+                            <th>Categoría</th>
+                            <th>Ent. Inicial</th>
+                            <th>Entradas</th>
+                            <th>Salidas</th>
+                            <th>Inv. Final</th>
+                            <th>Estado</th>
+                            <th width="120" class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state hidden" id="empty-inventory-state">
+                <i data-lucide="package-x"></i>
+                <h3>No se encontraron consumibles</h3>
+                <p>Intenta cambiar los términos de búsqueda o filtros aplicados.</p>
+                <button class="btn btn-secondary" id="btn-reset-filters">Restablecer Filtros</button>
+            </div>
+        </section>
+
+        <!-- TAB NUEVA: EQUIPOS EN ALMACÉN POR SERIAL -->
+        <section id="tab-serials" class="tab-content no-print">
+            <div class="toolbar-card">
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="input-search-serial" placeholder="Buscar por Serial (SN-XXX), Marca, Modelo o Ubicación en Almacén...">
+                    <button class="clear-search-btn" id="btn-clear-search-serial" style="display:none;">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+
+                <div class="filter-controls">
+                    <select id="select-serial-status" class="custom-select">
+                        <option value="ALL">Todos los Estados</option>
+                        <option value="Disponible">🟢 En Almacén (Disponible)</option>
+                        <option value="Mantenimiento">🔴 En Revisión / Mantenimiento</option>
+                    </select>
+
+                    <button class="btn btn-primary" id="btn-new-serial-item">
+                        <i data-lucide="plus-circle"></i> Registrar Serial en Almacén
+                    </button>
+                </div>
+            </div>
+
+            <div class="inventory-table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th width="160">Número de Serial</th>
+                            <th>Consumible / Equipo</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Ubicación en Almacén</th>
+                            <th>Estado</th>
+                            <th>Fecha Reg.</th>
+                            <th width="120" class="text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serials-table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state hidden" id="empty-serials-state">
+                <i data-lucide="cpu"></i>
+                <h3>No hay seriales registrados con ese criterio</h3>
+                <p>Registra un nuevo serial para llevar el control exacto de los equipos en almacén.</p>
+            </div>
+        </section>
+
+        <!-- TAB REPORTE OFICIAL EN PANTALLA -->
+        <section id="tab-report" class="tab-content no-print">
+            <div class="toolbar-card">
+                <div>
+                    <h2><i data-lucide="file-spreadsheet"></i> Vista Previa del Reporte Oficial de Almacén</h2>
+                    <p style="font-size:0.85rem; color:var(--text-muted);">Formato idéntico al documento Excel oficial con encabezado, columnas exactas y alerta roja en stock 0.</p>
+                </div>
+                <button class="btn btn-success btn-lg" id="btn-download-report-excel">
+                    <i data-lucide="file-spreadsheet"></i> Descargar Excel Oficial (.XLSX)
+                </button>
+            </div>
+
+            <div class="official-excel-sheet-preview">
+                <div class="excel-header-logos">
+                    <div class="logo-text-left">Ministerio del Poder Popular de<br><strong>HIDROCARBUROS</strong></div>
+                    <div class="logo-text-center">
+                        <div class="pequiven-title">Pequiven</div>
+                        <small>Petroquímica de Venezuela, S.A.</small>
+                    </div>
+                    <div class="logo-text-right">200<br><small>1822 - 2022</small></div>
+                </div>
+
+                <div class="excel-title-block">
+                    <h1>INVENTARIO</h1>
+                    <h2>RESUMEN DE INVENTARIO DE EQUIPOS HERRAMIENTAS REPUESTOS Y CONSUMIBLES</h2>
+                    <p class="excel-date" id="official-report-date">31/7/2026</p>
+                </div>
+
+                <div class="excel-table-wrapper">
+                    <table class="official-excel-table">
+                        <thead>
+                            <tr>
+                                <th width="70">RUTA</th>
+                                <th>CONSUMIBLES</th>
+                                <th width="150" class="text-center">ENTRADA INICIAL</th>
+                                <th width="120" class="text-center">ENTRADA</th>
+                                <th width="120" class="text-center">SALIDA</th>
+                                <th width="180" class="text-center">INVENTARIO FINAL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="official-report-table-body">
+                            <!-- Rendered dynamically matching image 2 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: GENERADOR & DISEÑADOR DE ETIQUETAS QR -->
+        <section id="tab-qr-labels" class="tab-content">
+            <div class="labels-layout">
+                <aside class="labels-sidebar no-print">
+                    <div class="sidebar-card">
+                        <h3><i data-lucide="sliders"></i> Configuración de Etiqueta</h3>
+                        
+                        <div class="form-group">
+                            <label>Tamaño de Etiqueta Adhesiva</label>
+                            <select id="select-label-style" class="custom-select">
+                                <option value="standard">Estándar Almacén (160px width)</option>
+                                <option value="compact">Compacta (130px width)</option>
+                                <option value="sticker-small">Sticker 50x30 mm (Mini)</option>
+                                <option value="sticker-medium">Sticker 70x45 mm (Mediana)</option>
+                                <option value="sticker-large">Sticker 100x60 mm (Detallada)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Columnas por Hoja de Impresión</label>
+                            <select id="select-grid-cols" class="custom-select">
+                                <option value="cols-4">4 Columnas (24 a 32 por hoja)</option>
+                                <option value="cols-3" selected>3 Columnas (15 a 18 por hoja)</option>
+                                <option value="cols-2">2 Columnas (8 a 10 por hoja)</option>
+                                <option value="cols-1">1 Columna (Tiras de etiquetas)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Elementos Visibles en la Etiqueta</label>
+                            <div class="checkbox-group">
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="chk-show-title" checked>
+                                    <span>Nombre del Consumible</span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="chk-show-id" checked>
+                                    <span>Código / ID de Ruta</span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="chk-show-category" checked>
+                                    <span>Categoría</span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="chk-show-location" checked>
+                                    <span>Ubicación Física</span>
+                                </label>
+                                <label class="custom-checkbox">
+                                    <input type="checkbox" id="chk-show-border" checked>
+                                    <span>Borde para corte</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Formato de Contenido del QR</label>
+                            <select id="select-qr-payload-type" class="custom-select">
+                                <option value="json" selected>JSON Completo (ID + Nombre)</option>
+                                <option value="id-only">Solo ID / Código (ej: "17")</option>
+                                <option value="formatted">Texto Completo Format (ID: 17 - TÓNER HP 26A)</option>
+                            </select>
+                        </div>
+
+                        <div class="sidebar-divider"></div>
+
+                        <div class="selection-summary">
+                            <div class="summary-text">
+                                <strong id="print-queue-count">94</strong> de <span id="print-queue-total">94</span> consumibles listos
+                            </div>
+                            <div class="quick-select-btns">
+                                <button class="btn btn-sm btn-outline" id="btn-select-all-print">Seleccionar Todos</button>
+                                <button class="btn btn-sm btn-outline" id="btn-clear-print">Limpiar Selección</button>
+                            </div>
+                        </div>
+
+                        <div class="print-actions">
+                            <button class="btn btn-primary btn-block btn-lg" id="btn-trigger-print">
+                                <i data-lucide="printer"></i> IMPRIMIR ETIQUETAS
+                            </button>
+                            <small class="help-text">💡 Tip: Configura "Sin márgenes" y la escala al 100% en la ventana de impresión.</small>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="labels-preview-area">
+                    <div class="print-header-banner no-print">
+                        <h2><i data-lucide="eye"></i> Vista Previa de Impresión de Etiquetas QR</h2>
+                        <p>Los códigos son generados dinámicamente listos para escáneres ópticos e inteligentes.</p>
+                    </div>
+
+                    <div class="qr-print-grid cols-3 standard" id="qr-print-container"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ESCÁNER QR -->
+        <section id="tab-scanner" class="tab-content no-print">
+            <div class="scanner-wrapper">
+                <div class="scanner-card">
+                    <div class="scanner-header">
+                        <h2><i data-lucide="qr-code"></i> Escáner de Consumibles</h2>
+                        <p>Escanea un código QR generado para ver o actualizar stock instantáneamente</p>
+                    </div>
+
+                    <div class="camera-container">
+                        <div id="qr-reader-viewport"></div>
+                        <div class="camera-placeholder" id="camera-placeholder">
+                            <i data-lucide="camera"></i>
+                            <p>Haz clic en "Iniciar Cámara" para activar el escáner web</p>
+                            <button class="btn btn-primary" id="btn-start-camera">
+                                <i data-lucide="video"></i> Iniciar Cámara
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="camera-controls hidden" id="camera-controls">
+                        <button class="btn btn-danger" id="btn-stop-camera">
+                            <i data-lucide="square"></i> Detener Cámara
+                        </button>
+                    </div>
+
+                    <div class="scanner-divider">
+                        <span>O PROBAR SIMULADOR MANUAL</span>
+                    </div>
+
+                    <div class="manual-scanner-box">
+                        <label for="input-manual-scan">Ingresar/Simular Código Escaneado (ID o Serial):</label>
+                        <div class="input-with-button">
+                            <input type="text" id="input-manual-scan" placeholder='Ej: 17, PC-LENOVO-9481 o {"id":"17"}'>
+                            <button class="btn btn-secondary" id="btn-manual-scan">
+                                <i data-lucide="search"></i> Buscar / Escanear
+                            </button>
+                        </div>
+                        <div class="quick-examples">
+                            <span>Prueba rápida:</span>
+                            <button class="chip-btn" data-scan-id="1">Ruta #1 (PC)</button>
+                            <button class="chip-btn" data-scan-id="PC-LENOVO-9481">SN: PC-LENOVO-9481</button>
+                            <button class="chip-btn" data-scan-id="72">Ruta #72 (Tóner HP 42A)</button>
+                            <button class="chip-btn" data-scan-id="54">Ruta #54 (UTP Cat6)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scanned-result-card hidden" id="scanned-result-card">
+                    <div class="card-header">
+                        <span class="badge badge-success">✓ Escaneado Exitoso</span>
+                        <span class="scan-time" id="scan-timestamp">Justo ahora</span>
+                    </div>
+                    <div class="scanned-item-detail">
+                        <div class="scanned-qr-thumb" id="scanned-qr-preview"></div>
+                        <div class="scanned-item-info">
+                            <span class="scanned-id" id="scanned-item-id">Ruta ID: #17</span>
+                            <h3 id="scanned-item-title">TÓNER HP 26A</h3>
+                            <span class="scanned-cat" id="scanned-item-cat">Impresión & Tóner</span>
+                            <div class="scanned-location">
+                                <i data-lucide="map-pin"></i> <span id="scanned-item-loc">Estante I-3</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="scanned-stock-box">
+                        <div class="stock-display">
+                            <small>Stock en Almacén</small>
+                            <div class="big-stock-num" id="scanned-stock-num">14</div>
+                        </div>
+                        <div class="stock-quick-actions">
+                            <button class="btn btn-success btn-lg" id="btn-scan-add">
+                                <i data-lucide="plus-circle"></i> Entrada (+1)
+                            </button>
+                            <button class="btn btn-danger btn-lg" id="btn-scan-remove">
+                                <i data-lucide="minus-circle"></i> Salida (-1)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: HISTORIAL DE MOVIMIENTOS -->
+        <section id="tab-history" class="tab-content no-print">
+            <div class="history-card">
+                <div class="card-header-flex">
+                    <div>
+                        <h2><i data-lucide="history"></i> Registro de Movimientos de Stock</h2>
+                        <p>Historial en tiempo real de entradas, salidas y modificaciones de inventario</p>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="btn-clear-history">
+                        <i data-lucide="trash-2"></i> Limpiar Historial
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha & Hora</th>
+                                <th>ID</th>
+                                <th>Consumible</th>
+                                <th>Tipo Operación</th>
+                                <th>Cambio</th>
+                                <th>Stock Resultante</th>
+                                <th>Notas / Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state hidden" id="empty-history-state">
+                    <i data-lucide="clock"></i>
+                    <h3>Sin movimientos registrados</h3>
+                    <p>Los ajustes de inventario que realices aparecerán registrados aquí.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: CREAR / EDITAR CONSUMIBLE -->
+    <div class="modal-overlay hidden" id="modal-item">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-title">Nuevo Consumible</h3>
+                <button class="btn-close-modal" id="btn-close-item-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="form-item">
+                <input type="hidden" id="form-original-id">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-4">
+                            <label for="form-id">Ruta / ID *</label>
+                            <input type="text" id="form-id" required placeholder="Ej: 96">
+                        </div>
+                        <div class="form-group col-8">
+                            <label for="form-item-name">Nombre del Consumible *</label>
+                            <input type="text" id="form-item-name" required placeholder="Ej: CABLE THUNDERBOLT 4">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="form-category">Categoría</label>
+                            <input type="text" id="form-category" list="category-list" required placeholder="Selecciona o escribe...">
+                            <datalist id="category-list">
+                                <option value="Equipos & Laptops">
+                                <option value="Almacenamiento & RAM">
+                                <option value="Periféricos & Accesorios">
+                                <option value="Impresión & Tóner">
+                                <option value="Redes, Cableado & Fibra">
+                                <option value="Energía & Iluminación">
+                                <option value="Herramientas & Consumibles">
+                            </datalist>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="form-ubicacion">Ubicación Física en Almacén</label>
+                            <input type="text" id="form-ubicacion" placeholder="Ej: Estante A-5, Caja 12">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="form-stock">Stock Actual *</label>
+                            <input type="number" id="form-stock" min="0" required value="10">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="form-min-stock">Stock Mínimo (Alerta)</label>
+                            <input type="number" id="form-min-stock" min="0" required value="3">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-item-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Consumible</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: AJUSTE RÁPIDO DE STOCK -->
+    <div class="modal-overlay hidden" id="modal-stock-adjust">
+        <div class="modal-container modal-sm">
+            <div class="modal-header">
+                <h3>Ajuste de Stock</h3>
+                <button class="btn-close-modal" id="btn-close-stock-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="item-summary-box">
+                    <h4 id="adjust-item-title">Consumible</h4>
+                    <span id="adjust-item-id">ID: #0</span>
+                </div>
+                
+                <div class="stock-adjuster-control">
+                    <button class="btn btn-circle btn-danger" id="btn-decrement-stock">-</button>
+                    <input type="number" id="adjust-stock-value" class="stock-input-lg" min="0" value="0">
+                    <button class="btn btn-circle btn-success" id="btn-increment-stock">+</button>
+                </div>
+
+                <div class="form-group mt-3">
+                    <label for="adjust-notes">Motivo / Nota del Movimiento</label>
+                    <input type="text" id="adjust-notes" placeholder="Ej: Despacho a Soporte Técnico, Compra mensual">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-stock-modal">Cancelar</button>
+                <button class="btn btn-primary" id="btn-save-stock-adjust">Guardar Ajuste</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CREAR / EDITAR SERIAL EN ALMACÉN -->
+    <div class="modal-overlay hidden" id="modal-serial-item">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-serial-title">Registrar Serial en Almacén</h3>
+                <button class="btn-close-modal" id="btn-close-serial-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="form-serial-item">
+                <input type="hidden" id="form-serial-original">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="form-serial-code">Número de Serial (Único) *</label>
+                            <input type="text" id="form-serial-code" required placeholder="Ej: SN-982138-AB">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="form-serial-itemid">Consumible / Equipo *</label>
+                            <select id="form-serial-itemid" class="custom-select" required></select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="form-serial-marca">Marca (Fabricante)</label>
+                            <input type="text" id="form-serial-marca" placeholder="Ej: Lenovo, HP, Cisco, Epson">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="form-serial-modelo">Modelo Específico</label>
+                            <input type="text" id="form-serial-modelo" placeholder="Ej: ThinkCentre M720q, ProDesk 400">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <label for="form-serial-ubicacion">Ubicación en Almacén</label>
+                            <input type="text" id="form-serial-ubicacion" placeholder="Ej: Estante A-1, Caja 3">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="form-serial-estado">Estado en Almacén</label>
+                            <select id="form-serial-estado" class="custom-select">
+                                <option value="Disponible">🟢 En Almacén (Disponible)</option>
+                                <option value="Mantenimiento">🔴 En Revisión / Mantenimiento</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-serial-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Serial en Almacén</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts de la aplicación -->
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
