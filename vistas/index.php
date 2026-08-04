@@ -23,6 +23,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="js/imagen1_base64.js"></script>
 
     <!-- Custom Enterprise CSS -->
     <link rel="stylesheet" href="estilos/styles.css">
@@ -724,7 +725,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
                     
                     <!-- 1. MEMBRETE / BANNER IMAGEN -->
                     <div style="text-align: center; margin-bottom: 15px;">
-                        <img src="Imagen1.jpg" alt="Pequiven logo" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=(window.HEADER_LOGO_BASE64||'');}" style="max-width: 100%; height: auto; max-height: 75px; display: block; margin: 0 auto;">
+                        <img id="plan-header-logo-img" src="Imagen1.jpg" alt="Pequiven logo" onerror="if(window.HEADER_LOGO_BASE64)this.src=window.HEADER_LOGO_BASE64;" style="max-width: 100%; height: auto; max-height: 75px; display: block; margin: 0 auto;">
                     </div>
 
                     <!-- 2. TITULO PRINCIPAL -->

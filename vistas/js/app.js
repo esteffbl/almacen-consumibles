@@ -926,11 +926,9 @@ function openPlanillaModal(data) {
   const modal = document.getElementById('modal-planilla-oficial');
   if (!modal) return;
 
-  const imgLogo = document.querySelector('#printable-planilla-content img');
-  if (imgLogo) {
-    if (!imgLogo.src || imgLogo.src.includes('undefined') || imgLogo.complete === false) {
-      if (window.HEADER_LOGO_BASE64) imgLogo.src = window.HEADER_LOGO_BASE64;
-    }
+  const imgLogo = document.querySelector('#printable-planilla-content img') || document.getElementById('plan-header-logo-img');
+  if (imgLogo && window.HEADER_LOGO_BASE64) {
+    imgLogo.src = window.HEADER_LOGO_BASE64;
   }
 
   const isEntrada = data.type === 'ENTRADA';
