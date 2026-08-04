@@ -713,7 +713,74 @@ h1, h2, h3, h4, h5, h6 {
   .login-header h2 {
     font-size: 1.35rem !important;
   }
+
+  /* Ajustes del Escáner y Cámara en Móvil */
+  #qr-reader-viewport {
+    width: 100% !important;
+    max-width: 340px !important;
+    min-height: 250px !important;
+    margin: 0 auto !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background: #0f172a !important;
+  }
+
+  #qr-reader-viewport video {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 320px !important;
+    border-radius: 14px !important;
+    object-fit: cover !important;
+  }
+
+  .manual-scanner-box .input-with-button {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .manual-scanner-box input {
+    width: 100% !important;
+    font-size: 0.9rem !important;
+  }
+
+  .manual-scanner-box .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .quick-examples {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  .quick-examples .chip-btn {
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Fix para la barra de acciones seleccionadas que se solapaba */
+  .floating-action-bar, .selected-bar, [class*="selected-"] {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    margin: 0.65rem 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .floating-action-bar .btn, .selected-bar .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
 }
+
 
 @media (max-width: 480px) {
   .header-stats {

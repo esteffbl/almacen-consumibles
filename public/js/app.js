@@ -1348,27 +1348,66 @@ function saveStockAdjustment() {
   closeStockModal();
 }
 
-function startCameraScanner() {
+async function startCameraScanner() {
   const placeholder = document.getElementById('camera-placeholder');
   const controls = document.getElementById('camera-controls');
 
-  placeholder?.classList.add('hidden');
-  controls?.classList.remove('hidden');
+  if (placeholder) placeholder.classList.add('hidden');
+  if (controls) controls.classList.remove('hidden');
 
-  state.html5QrScanner = new Html5Qrcode("qr-reader-viewport");
-  state.html5QrScanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 250, height: 250 } },
-    (decodedText) => {
-      handleScanResult(decodedText);
-      stopCameraScanner();
-    },
-    (errorMessage) => {}
-  ).catch(err => {
-    alert("No se pudo acceder a la cámara: " + err);
+  try {
+    if (state.html5QrScanner) {
+      try {
+        await state.html5QrScanner.stop();
+        state.html5QrScanner.clear();
+      } catch (e) {}
+    }
+
+    state.html5QrScanner = new Html5Qrcode("qr-reader-viewport");
+
+    const config = {
+      fps: 15,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        const qrboxSize = Math.max(150, Math.floor(minEdge * 0.75));
+        return { width: qrboxSize, height: qrboxSize };
+      },
+      aspectRatio: 1.0
+    };
+
+    try {
+      await state.html5QrScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          handleScanResult(decodedText);
+          stopCameraScanner();
+        },
+        () => {}
+      );
+    } catch (envErr) {
+      const devices = await Html5Qrcode.getCameras();
+      if (devices && devices.length > 0) {
+        const backCamera = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('trasera')) || devices[devices.length - 1];
+        await state.html5QrScanner.start(
+          backCamera.id,
+          config,
+          (decodedText) => {
+            handleScanResult(decodedText);
+            stopCameraScanner();
+          },
+          () => {}
+        );
+      } else {
+        throw envErr;
+      }
+    }
+  } catch (err) {
+    alert("Permiso de cámara: Permite el acceso a la cámara en el navegador de tu celular. Detalle: " + (err.message || err));
     stopCameraScanner();
-  });
+  }
 }
+
 
 function stopCameraScanner() {
   if (state.html5QrScanner) {
