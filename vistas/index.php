@@ -154,9 +154,6 @@ $dbSerials = EquipoSerial::obtenerTodos();
                 <i data-lucide="printer"></i> Etiquetas QR & Impresión
                 <span class="badge badge-accent" id="badge-selected-count">0</span>
             </button>
-            <button class="tab-btn" data-tab="tab-scanner">
-                <i data-lucide="scan-line"></i> Escáner QR / Seriales
-            </button>
             <button class="tab-btn" data-tab="tab-history">
                 <i data-lucide="history"></i> Movimientos
             </button>
@@ -188,6 +185,10 @@ $dbSerials = EquipoSerial::obtenerTodos();
                         <option value="NORMAL">✅ Stock Normal</option>
                         <option value="OUT">❌ Agotado</option>
                     </select>
+
+                    <button class="btn btn-emerald" id="btn-scan-qr-inventory" title="Escanear Sticker QR del Sistema">
+                        <i data-lucide="qr-code"></i> Escanear QR Sticker
+                    </button>
 
                     <button class="btn btn-primary" id="btn-new-item">
                         <i data-lucide="plus"></i> Nuevo Consumible
@@ -457,71 +458,6 @@ $dbSerials = EquipoSerial::obtenerTodos();
                     </div>
 
                     <div class="qr-print-grid cols-3 standard" id="qr-print-container"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 3: ESCÁNER QR / SERIALES -->
-        <section id="tab-scanner" class="tab-content no-print">
-            <div class="scanner-wrapper">
-                <div class="scanner-card">
-                    <div class="scanner-header">
-                        <h2><i data-lucide="scan"></i> Escáner & Registro por Código de Barras / QR</h2>
-                        <p>Escanea cualquier serial o QR de equipo para registrarlo automáticamente en el inventario de almacén.</p>
-                    </div>
-
-                    <div class="camera-container">
-                        <div id="qr-reader-viewport"></div>
-                        <div class="camera-placeholder" id="camera-placeholder">
-                            <i data-lucide="camera"></i>
-                            <p>Haz clic en "Iniciar Cámara" para activar el escáner</p>
-                            <button class="btn btn-primary" id="btn-start-camera">
-                                <i data-lucide="video"></i> Iniciar Cámara
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="camera-controls hidden" id="camera-controls">
-                        <button class="btn btn-danger" id="btn-stop-camera">
-                            <i data-lucide="square"></i> Detener Cámara
-                        </button>
-                    </div>
-
-                    <div class="scanner-divider">
-                        <span>O INGRESA CÓDIGO CON LECTOR DE BARRAS USB / TECLADO</span>
-                    </div>
-
-                    <div class="manual-scanner-box">
-                        <label for="input-manual-scan">Escanear o Ingresar Número de Serial o ID:</label>
-                        <div class="input-with-button">
-                            <input type="text" id="input-manual-scan" placeholder="Escanea con el lector USB o escribe el serial (ej: SN-LENOVO-9841)...">
-                            <button class="btn btn-primary" id="btn-manual-scan">
-                                <i data-lucide="scan"></i> Procesar Escaneo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="scanned-result-card hidden" id="scanned-result-card">
-                    <div class="card-header">
-                        <span class="badge badge-success" id="scanned-status-badge">✓ Serial Detectado en Almacén</span>
-                        <span class="scan-time" id="scan-timestamp">Justo ahora</span>
-                    </div>
-                    <div class="scanned-item-detail">
-                        <div class="scanned-qr-thumb" id="scanned-qr-preview"></div>
-                        <div class="scanned-item-info">
-                            <span class="scanned-id" id="scanned-item-id">SERIAL: SN-00000</span>
-                            <h3 id="scanned-item-title">Equipo</h3>
-                            <span class="scanned-cat" id="scanned-item-cat">Estado: En Almacén</span>
-                            <div class="scanned-location">
-                                <i data-lucide="map-pin"></i> <span id="scanned-item-loc">Estante A-1</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="scanned-stock-box" id="scanned-actions-container">
-                        <!-- Action buttons injected dynamically -->
-                    </div>
                 </div>
             </div>
         </section>
@@ -980,6 +916,84 @@ $dbSerials = EquipoSerial::obtenerTodos();
                     <button type="submit" class="btn btn-primary">Guardar Serial en Almacén</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ESCÁNER DE CÁMARA & LECTOR DE BARRAS -->
+    <div class="modal-overlay hidden" id="modal-camera-scanner">
+        <div class="modal-container" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3 id="modal-camera-scanner-title"><i data-lucide="scan"></i> Escáner de Código QR / Serial</h3>
+                <button class="btn-close-modal" id="btn-close-camera-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <p id="modal-camera-scanner-desc" style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">
+                    Apunta la cámara al código QR o código de barras del equipo.
+                </p>
+                <div class="camera-container" style="position:relative; width:100%; min-height:220px; background:#000; border-radius:10px; overflow:hidden;">
+                    <div id="modal-qr-reader-viewport"></div>
+                    <div class="camera-placeholder" id="modal-camera-placeholder" style="padding: 2rem; color: #fff;">
+                        <i data-lucide="camera" style="width:48px; height:48px; margin-bottom:0.5rem; opacity:0.7;"></i>
+                        <p>Iniciando cámara...</p>
+                    </div>
+                </div>
+                <div class="camera-controls hidden mt-2" id="modal-camera-controls" style="margin-top:0.75rem;">
+                    <button class="btn btn-danger btn-sm" id="btn-modal-stop-camera">
+                        <i data-lucide="square"></i> Detener Cámara
+                    </button>
+                </div>
+                <div class="manual-scanner-box mt-3" style="border-top:1px dashed var(--border-color); padding-top:1rem; margin-top:1rem;">
+                    <label for="input-modal-manual-scan" style="font-size:0.85rem; font-weight:600; display:block; text-align:left; margin-bottom:0.4rem;">
+                        O ingresa código manualmente / Lector USB:
+                    </label>
+                    <div class="input-with-button">
+                        <input type="text" id="input-modal-manual-scan" placeholder="Escanea o escribe serial o ID...">
+                        <button class="btn btn-primary" id="btn-modal-manual-scan">
+                            <i data-lucide="arrow-right"></i> Procesar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-camera-modal">Cerrar Escáner</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: SELECCIÓN DE ACCIÓN TRAS ESCANEAR QR STICKER -->
+    <div class="modal-overlay hidden" id="modal-scan-action-choice">
+        <div class="modal-container" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3><i data-lucide="qr-code"></i> Sticker QR Escaneado</h3>
+                <button class="btn-close-modal" id="btn-close-scan-choice-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="item-summary-box" style="padding:1rem; background:var(--bg-secondary); border-radius:10px; margin-bottom:1.2rem;">
+                    <span class="badge badge-accent" id="scan-choice-item-id">ID: #0</span>
+                    <h3 id="scan-choice-item-title" style="margin:0.5rem 0; font-size:1.2rem; color:var(--text-main);">Nombre Consumible</h3>
+                    <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                        Stock Actual en Almacén: <strong id="scan-choice-item-stock" style="font-size:1.1rem; color:var(--accent-primary);">0</strong> unidades
+                    </p>
+                </div>
+
+                <p style="font-weight:600; margin-bottom:1rem;">¿Qué operación deseas realizar con este consumible?</p>
+
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <button class="btn btn-emerald btn-lg btn-block" id="btn-choice-entrada" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; font-size:1.05rem;">
+                        <i data-lucide="arrow-down-left"></i> 🟢 REGISTRAR ENTRADA (+ Ingreso)
+                    </button>
+                    <button class="btn btn-rose btn-lg btn-block" id="btn-choice-salida" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; font-size:1.05rem;">
+                        <i data-lucide="arrow-up-right"></i> 🔴 REGISTRAR SALIDA (- Despacho)
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-scan-choice-modal">Cancelar</button>
+            </div>
         </div>
     </div>
 
