@@ -22,6 +22,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <!-- Custom Enterprise CSS -->
     <link rel="stylesheet" href="estilos/styles.css">
@@ -874,9 +875,12 @@ $dbSerials = EquipoSerial::obtenerTodos();
                         <div class="form-group col-6">
                             <label for="form-serial-code">Número de Serial (Único) *</label>
                             <div class="input-with-button">
-                                <input type="text" id="form-serial-code" required placeholder="Ej: SN-982138-AB">
-                                <button type="button" class="btn btn-outline" id="btn-scan-serial-modal" title="Escanear Código de Barras o Serial de la Caja con la Cámara">
-                                    <i data-lucide="camera"></i> Escanear
+                                <input type="text" id="form-serial-code" required placeholder="Ej: CNC23801CB">
+                                <button type="button" class="btn btn-primary" id="btn-scan-serial-photo" title="Tomar Foto a la Etiqueta de la Caja (Detectar Serial, Marca y Modelo)">
+                                    <i data-lucide="camera"></i> Foto Etiqueta
+                                </button>
+                                <button type="button" class="btn btn-outline" id="btn-scan-serial-modal" title="Escanear Código de Barras con la Cámara">
+                                    <i data-lucide="scan"></i> Código
                                 </button>
                             </div>
                         </div>
@@ -992,6 +996,9 @@ $dbSerials = EquipoSerial::obtenerTodos();
             </div>
         </div>
     </div>
+
+    <!-- Input oculto para Captura de Foto de Etiqueta OCR -->
+    <input type="file" id="input-file-ocr-label" accept="image/*" capture="environment" style="display:none;">
 
     <!-- Scripts de la aplicación -->
     <script>

@@ -485,6 +485,16 @@ function setupEventListeners() {
   document.getElementById('form-serial-item')?.addEventListener('submit', handleSaveSerial);
   document.getElementById('form-serial-itemid')?.addEventListener('change', (e) => autoFillMarcaModeloFromItem(e.target.value));
 
+  document.getElementById('btn-scan-serial-photo')?.addEventListener('click', () => {
+    document.getElementById('input-file-ocr-label')?.click();
+  });
+
+  document.getElementById('input-file-ocr-label')?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      processLabelImageOCR(e.target.files[0]);
+    }
+  });
+
   // Modal Ajuste Rápido de Stock
   document.getElementById('btn-close-stock-modal')?.addEventListener('click', closeStockModal);
   document.getElementById('btn-cancel-stock-modal')?.addEventListener('click', closeStockModal);
@@ -1085,7 +1095,117 @@ function renderSerials() {
     `;
   }).join('');
 
-  savefunction parseBrandAndModel(itemName) {
+  saveSerials();
+  initLucideIcons();
+}
+
+function parseLabelText(rawText) {
+  if (!rawText) return { serial: '', brand: '', model: '' };
+
+  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  let serial = '';
+  let brand = '';
+  let model = '';
+
+  const knownBrands = [
+    'HP', 'HEWLETT PACKARD', 'LENOVO', 'DELL', 'CISCO', 'RICOH', 'EPSON',
+    'CANON', 'KINGSTON', 'SAMSUNG', 'LG', 'COMPAQ', 'BROTHER', 'PANASONIC',
+    'SONY', 'ACER', 'ASUS', 'INTEL', 'AMD', 'NVIDIA', 'DAHUA', 'UBIQUITI',
+    'FORTINET', 'MIKROTIK', 'TRIPP-LITE', 'TRIPPLITE', 'LOGITECH', 'ZEBRA'
+  ];
+
+  for (const line of lines) {
+    const upper = line.toUpperCase();
+    for (const b of knownBrands) {
+      const regex = new RegExp(`\\b${b}\\b`, 'i');
+      if (regex.test(upper)) {
+        brand = b === 'HEWLETT PACKARD' ? 'HP' : b;
+        break;
+      }
+    }
+    if (brand) break;
+  }
+
+  for (const line of lines) {
+    const snMatch = line.match(/(?:Serial\s*(?:No|Num|Number|\.)*|S\/N|SN)\s*[:.]?\s*([A-Z0-9-]{6,20})/i);
+    if (snMatch) {
+      serial = snMatch[1];
+      break;
+    }
+  }
+
+  if (!serial) {
+    for (const line of lines) {
+      const match = line.match(/\b([A-Z0-9]{8,16})\b/);
+      if (match && !/MONITOR|COMPAQ|PRODUCT|OPTION|SPARE|MODEL|HEWLETT|PACKARD|CHINA|REVISION/i.test(match[1])) {
+        serial = match[1];
+        break;
+      }
+    }
+  }
+
+  for (const line of lines) {
+    const modelMatch = line.match(/(?:Model|Modelo|型号)\s*[:.]?\s*([A-Z0-9\s-]{3,25})/i);
+    if (modelMatch) {
+      model = modelMatch[1].replace(/Monitor|LCD|Product|China/gi, '').trim();
+      break;
+    }
+  }
+
+  if (!model) {
+    for (const line of lines) {
+      if (/MONITOR|DESK|THINK|PROBOOK|LATITUDE|THINKCENTRE|LCD|PRODESK|COMPAQ/i.test(line)) {
+        model = line.replace(/^HP\s+/i, '').replace(/^DELL\s+/i, '').replace(/^LENOVO\s+/i, '').trim();
+        break;
+      }
+    }
+  }
+
+  return { serial, brand, model };
+}
+
+async function processLabelImageOCR(file) {
+  if (!file) return;
+
+  const alertToast = document.createElement('div');
+  alertToast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:999999;background:var(--accent-primary,#2563eb);color:#fff;padding:14px 22px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-weight:600;font-size:0.95rem;display:flex;align-items:center;gap:10px;';
+  alertToast.innerHTML = `<span>⏳</span> <span>Analizando foto de etiqueta con IA (Serial, Marca y Modelo)...</span>`;
+  document.body.appendChild(alertToast);
+
+  try {
+    let rawText = '';
+    if (typeof Tesseract !== 'undefined') {
+      const result = await Tesseract.recognize(file, 'eng');
+      rawText = result.data ? result.data.text || '' : '';
+    }
+
+    alertToast.remove();
+
+    const parsed = parseLabelText(rawText);
+
+    openSerialModal(parsed.serial || null);
+
+    const codeInput = document.getElementById('form-serial-code');
+    const marcaInput = document.getElementById('form-serial-marca');
+    const modeloInput = document.getElementById('form-serial-modelo');
+
+    if (parsed.serial && codeInput) codeInput.value = parsed.serial;
+    if (parsed.brand && marcaInput) marcaInput.value = parsed.brand;
+    if (parsed.model && modeloInput) modeloInput.value = parsed.model;
+
+    if (parsed.serial || parsed.brand || parsed.model) {
+      alert(`✅ Foto de Etiqueta Procesada:\n• Serial: ${parsed.serial || 'No detectado'}\n• Marca: ${parsed.brand || 'Auto'}\n• Modelo: ${parsed.model || 'Auto'}`);
+    } else {
+      alert('ℹ️ Se tomó la foto pero no se identificó texto legible. Por favor verifica los datos.');
+    }
+  } catch (err) {
+    console.error("Error al procesar la foto de la etiqueta:", err);
+    if (alertToast) alertToast.remove();
+    alert('Error al leer la foto. Ingresa los datos manualmente.');
+  }
+}
+
+function parseBrandAndModel(itemName) {
   if (!itemName) return { brand: 'S/M', model: 'S/M' };
 
   const knownBrands = [
@@ -1250,12 +1370,6 @@ function handleSaveSerial(e) {
   closeSerialModal();
   saveSerials();
   renderSerials();
-}
-  }
-
-  saveSerials();
-  renderSerials();
-  closeSerialModal();
 }
 
 function deleteSerial(serialCode) {
