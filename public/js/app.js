@@ -181,7 +181,7 @@ function loadData() {
   } else {
     const savedData = localStorage.getItem('qr_inventory_data');
     const savedVersion = localStorage.getItem('qr_inventory_version');
-    const OFFICIAL_VERSION = '2026_08_03_entradas_salidas_v15';
+    const OFFICIAL_VERSION = '2026_08_04_v16_sync_excel';
 
     if (savedData && savedVersion === OFFICIAL_VERSION) {
       try {
