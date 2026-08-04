@@ -1427,21 +1427,60 @@ async function startModalCameraScanner() {
       } catch (e) {}
     }
 
-    state.modalHtml5QrScanner = new Html5Qrcode("modal-qr-reader-viewport");
+    const formatsToSupport = typeof Html5QrcodeSupportedFormats !== 'undefined' ? [
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.ITF,
+      Html5QrcodeSupportedFormats.CODABAR
+    ] : undefined;
+
+    const scannerOptions = { verbose: false };
+    if (formatsToSupport) {
+      scannerOptions.formatsToSupport = formatsToSupport;
+    }
+
+    state.modalHtml5QrScanner = new Html5Qrcode("modal-qr-reader-viewport", scannerOptions);
 
     const config = {
-      fps: 15,
+      fps: 20,
       qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        const qrboxSize = Math.max(150, Math.floor(minEdge * 0.75));
-        return { width: qrboxSize, height: qrboxSize };
+        const boxWidth = Math.min(280, Math.floor(viewfinderWidth * 0.85));
+        const boxHeight = Math.min(160, Math.floor(viewfinderHeight * 0.55));
+        return { width: Math.max(boxWidth, 150), height: Math.max(boxHeight, 100) };
       },
-      aspectRatio: 1.0
+      aspectRatio: 1.0,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
     };
 
     const onScanSuccess = (decodedText) => {
       stopModalCameraScanner();
       handleModalScanResult(decodedText);
+    };
+
+    const fixVideoStyles = () => {
+      if (placeholder) placeholder.classList.add('hidden');
+      if (controls) controls.classList.remove('hidden');
+      setTimeout(() => {
+        const videoEl = document.querySelector('#modal-qr-reader-viewport video');
+        if (videoEl) {
+          videoEl.setAttribute('playsinline', 'true');
+          videoEl.setAttribute('autoplay', 'true');
+          videoEl.style.width = '100%';
+          videoEl.style.height = '100%';
+          videoEl.style.minHeight = '240px';
+          videoEl.style.objectFit = 'cover';
+          videoEl.style.display = 'block';
+          videoEl.play().catch(() => {});
+        }
+      }, 100);
     };
 
     try {
@@ -1451,8 +1490,7 @@ async function startModalCameraScanner() {
         onScanSuccess,
         () => {}
       );
-      if (placeholder) placeholder.classList.add('hidden');
-      if (controls) controls.classList.remove('hidden');
+      fixVideoStyles();
     } catch (envErr) {
       const devices = await Html5Qrcode.getCameras();
       if (devices && devices.length > 0) {
@@ -1463,15 +1501,14 @@ async function startModalCameraScanner() {
           onScanSuccess,
           () => {}
         );
-        if (placeholder) placeholder.classList.add('hidden');
-        if (controls) controls.classList.remove('hidden');
+        fixVideoStyles();
       } else {
         throw envErr;
       }
     }
   } catch (err) {
     console.warn("Error al iniciar cámara modal: ", err);
-    if (placeholder) placeholder.innerHTML = `<i data-lucide="camera-off" style="width:48px;height:48px;opacity:0.6;margin-bottom:0.5rem;"></i><p>Usa el ingreso manual de código abajo</p>`;
+    if (placeholder) placeholder.innerHTML = `<i data-lucide="camera-off" style="width:48px;height:48px;opacity:0.6;margin-bottom:0.5rem;"></i><p>Permite el acceso a la cámara o usa el ingreso manual de código abajo</p>`;
     initLucideIcons();
   }
 }
