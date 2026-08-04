@@ -1085,7 +1085,11 @@ function renderSerials() {
     `;
   }).join('');
 
-  savefunction parseBrandAndModel(itemName) {
+  saveSerials();
+  initLucideIcons();
+}
+
+function parseBrandAndModel(itemName) {
   if (!itemName) return { brand: 'S/M', model: 'S/M' };
 
   const knownBrands = [
@@ -1250,12 +1254,6 @@ function handleSaveSerial(e) {
   closeSerialModal();
   saveSerials();
   renderSerials();
-}
-  }
-
-  saveSerials();
-  renderSerials();
-  closeSerialModal();
 }
 
 function deleteSerial(serialCode) {
