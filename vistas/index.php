@@ -274,16 +274,8 @@ $dbSerials = EquipoSerial::obtenerTodos();
                         <option value="Mantenimiento">🔴 En Revisión / Mantenimiento</option>
                     </select>
 
-                    <button class="btn btn-primary" id="btn-scan-serial-photo-tab" title="Tomar Foto / Cargar Imagen a Etiqueta de Equipo (Serial, Marca y Modelo por OCR)">
-                        <i data-lucide="camera"></i> Foto Etiqueta (OCR)
-                    </button>
-
-                    <button class="btn btn-success" id="btn-scan-serial-tab" title="Escanear Código de Barras o QR con la Cámara">
-                        <i data-lucide="scan"></i> Escanear Barras / QR
-                    </button>
-
                     <button class="btn btn-primary" id="btn-new-serial-item">
-                        <i data-lucide="plus-circle"></i> Manual: Registrar Serial
+                        <i data-lucide="plus-circle"></i> Registrar Equipo por Serial
                     </button>
                 </div>
             </div>
@@ -491,6 +483,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
                                 <th>Cambio</th>
                                 <th>Stock Resultante</th>
                                 <th>Notas / Detalles</th>
+                                <th width="140" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="history-table-body"></tbody>
@@ -594,6 +587,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
             </div>
             <form id="form-movement">
                 <input type="hidden" id="movement-item-id">
+                <input type="hidden" id="movement-history-index" value="-1">
                 <div class="modal-body">
                     <div class="item-summary-box text-center" style="margin-bottom: 1.1rem; background: var(--bg-primary); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                         <h4 id="movement-item-title" style="margin:0; font-size: 1.05rem;">Consumible</h4>
@@ -693,9 +687,13 @@ $dbSerials = EquipoSerial::obtenerTodos();
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group col-12">
-                            <label for="movement-notes">Motivo / Observaciones</label>
-                            <input type="text" id="movement-notes" placeholder="Ej: SUMINISTRO PARA IMPRESORA DE PALMICHAL">
+                        <div class="form-group col-6">
+                            <label for="movement-motivo">Motivo del Suministro *</label>
+                            <input type="text" id="movement-motivo" required placeholder="Ej: SUMINISTRO PARA IMPRESORA DE PALMICHAL" value="SUMINISTRO DE CONSUMIBLES">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="movement-notes">Observaciones / Notas</label>
+                            <input type="text" id="movement-notes" placeholder="Ej: s/o, Entregado en buen estado" value="s/o">
                         </div>
                     </div>
                 </div>
@@ -711,8 +709,8 @@ $dbSerials = EquipoSerial::obtenerTodos();
 
     <!-- MODAL: PLANILLA OFICIAL PEQUIVEN (COMPROBANTE DE ENTRADA / SALIDA - IMPRESIÓN Y PDF) -->
     <div class="modal-overlay hidden" id="modal-planilla-oficial">
-        <div class="modal-container" style="max-width: 820px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 1.5rem;">
-            <div class="modal-header no-print" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <div class="modal-container" style="max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 1rem;">
+            <div class="modal-header no-print" style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
                 <h3 id="planilla-modal-title" style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
                     <i data-lucide="file-text"></i> Planilla Oficial Pequiven
                 </h3>
@@ -721,12 +719,12 @@ $dbSerials = EquipoSerial::obtenerTodos();
                 </button>
             </div>
             
-            <div class="modal-body" style="padding: 0; display: flex; justify-content: center; background: #ffffff;">
-                <div class="printable-planilla-pequiven" id="printable-planilla-content" style="width: 100%; max-width: 750px; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12px; padding: 15px; box-sizing: border-box;">
+            <div class="modal-body" style="padding: 0.5rem; flex: 1 1 auto; overflow-x: auto; overflow-y: auto; background: #ffffff;">
+                <div class="printable-planilla-pequiven" id="printable-planilla-content" style="width: 100%; min-width: 600px; max-width: 750px; margin: 0 auto; background: #ffffff; color: #000000; font-family: Arial, sans-serif; font-size: 12px; padding: 15px; box-sizing: border-box;">
                     
                     <!-- 1. MEMBRETE / BANNER IMAGEN -->
                     <div style="text-align: center; margin-bottom: 15px;">
-                        <img src="Imagen1.jpg" alt="Pequiven logo" style="max-width: 100%; height: auto; max-height: 75px; display: block; margin: 0 auto;">
+                        <img src="Imagen1.jpg" alt="Pequiven logo" onerror="if(!this.dataset.tried){this.dataset.tried=1;this.src=(window.HEADER_LOGO_BASE64||'');}" style="max-width: 100%; height: auto; max-height: 75px; display: block; margin: 0 auto;">
                     </div>
 
                     <!-- 2. TITULO PRINCIPAL -->
@@ -751,7 +749,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
                             </tr>
                             <tr>
                                 <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 12px 8px; color: #000000;" id="plan-solicitante-gerencia">GERENCIA DE TI</td>
-                                <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 12px 8px; color: #000000;" id="plan-solicitante-motivo">SUMINISTRO PARA IMPRESORA DE PALMICHAL.</td>
+                                <td style="text-align: center; font-weight: bold; font-size: 12px; border: 1px solid #000000; padding: 12px 8px; color: #000000;" id="plan-solicitante-motivo">SUMINISTRO DE CONSUMIBLES</td>
                             </tr>
                         </tbody>
                     </table>
@@ -811,7 +809,7 @@ $dbSerials = EquipoSerial::obtenerTodos();
                                     <div><strong>FIRMA:</strong> ____________________</div>
                                 </td>
                                 <td style="width: 30%; border: 1px solid #000000; padding: 8px; vertical-align: top; color: #000000;">
-                                    <div><strong>Observacion:</strong></div>
+                                    <div><strong>Observacion:</strong> <span id="plan-footer-obs">s/o</span></div>
                                 </td>
                             </tr>
                         </tbody>

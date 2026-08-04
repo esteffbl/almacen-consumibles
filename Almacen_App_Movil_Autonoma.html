@@ -1116,6 +1116,7 @@ h1, h2, h3, h4, h5, h6 {
                                 <th>Cambio</th>
                                 <th>Stock Resultante</th>
                                 <th>Notas / Detalles</th>
+                                <th width="140" class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="history-table-body"></tbody>
@@ -1219,6 +1220,7 @@ h1, h2, h3, h4, h5, h6 {
             </div>
             <form id="form-movement">
                 <input type="hidden" id="movement-item-id">
+                <input type="hidden" id="movement-history-index" value="-1">
                 <div class="modal-body">
                     <div class="item-summary-box text-center" style="margin-bottom: 1.1rem; background: var(--bg-primary); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                         <h4 id="movement-item-title" style="margin:0; font-size: 1.05rem;">Consumible</h4>
@@ -1318,9 +1320,13 @@ h1, h2, h3, h4, h5, h6 {
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group col-12">
-                            <label for="movement-notes">Motivo / Observaciones</label>
-                            <input type="text" id="movement-notes" placeholder="Ej: SUMINISTRO PARA IMPRESORA DE PALMICHAL">
+                        <div class="form-group col-6">
+                            <label for="movement-motivo">Motivo del Suministro *</label>
+                            <input type="text" id="movement-motivo" required placeholder="Ej: SUMINISTRO PARA IMPRESORA DE PALMICHAL" value="SUMINISTRO DE CONSUMIBLES">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="movement-notes">Observaciones / Notas</label>
+                            <input type="text" id="movement-notes" placeholder="Ej: s/o, Entregado en buen estado" value="s/o">
                         </div>
                     </div>
                 </div>
