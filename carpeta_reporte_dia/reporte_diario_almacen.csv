@@ -1,0 +1,6 @@
+Ruta_ID,Consumible,Categoria,Stock_Actual,Estado_Stock,Fecha_Cierre
+1,PC,Equipos & Laptops,42,NORMAL,2026-08-02
+2,DISCO DURO SSD,Almacenamiento & RAM,41,NORMAL,2026-08-02
+72,TÓNER HP LASERJET MODELO 42A (COLOR NEGRO),Impresión & Tóner,11,NORMAL,2026-08-02
+87,TÓNER IMPRESORA RICOH IM4000,Impresión & Tóner,41,NORMAL,2026-08-02
+93,LAPTOPS LENOVO E41-50,Equipos & Laptops,2,STOCK_BAJO,2026-08-02
