@@ -926,9 +926,10 @@ function openPlanillaModal(data) {
   const modal = document.getElementById('modal-planilla-oficial');
   if (!modal) return;
 
+  const logoData = (typeof HEADER_LOGO_BASE64 !== 'undefined' && HEADER_LOGO_BASE64) ? HEADER_LOGO_BASE64 : (window.HEADER_LOGO_BASE64 || '');
   const imgLogo = document.querySelector('#printable-planilla-content img') || document.getElementById('plan-header-logo-img');
-  if (imgLogo && window.HEADER_LOGO_BASE64) {
-    imgLogo.src = window.HEADER_LOGO_BASE64;
+  if (imgLogo && logoData) {
+    imgLogo.src = logoData;
   }
 
   const isEntrada = data.type === 'ENTRADA';
@@ -1004,15 +1005,15 @@ function renderHistory() {
         <td>${h.finalStock}</td>
         <td><small>${escapeHtml(h.notes || '-')}</small></td>
         <td class="text-right">
-          <div style="display:flex; justify-content:flex-end; gap:0.3rem;">
-            <button class="btn btn-icon btn-sm" onclick="verPlanillaFromHistoryIndex(${idx})" title="Ver / Imprimir Planilla">
-              <i data-lucide="file-text" style="color:var(--accent-primary);"></i>
+          <div style="display:flex; justify-content:flex-end; gap:0.35rem; align-items:center;">
+            <button type="button" class="btn btn-icon btn-sm" onclick="verPlanillaFromHistoryIndex(${idx})" title="Ver / Imprimir Planilla" style="background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; padding: 4px 8px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:3px;">
+              <i data-lucide="file-text"></i> 📄 Planilla
             </button>
-            <button class="btn btn-icon btn-sm" onclick="editarMovimientoFromHistoryIndex(${idx})" title="Editar este movimiento">
-              <i data-lucide="edit" style="color:#f59e0b;"></i>
+            <button type="button" class="btn btn-icon btn-sm" onclick="editarMovimientoFromHistoryIndex(${idx})" title="Editar este movimiento" style="background:#fffbeb; border:1px solid #fde68a; color:#d97706; padding: 4px 8px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:3px;">
+              <i data-lucide="pencil"></i> ✏️ Editar
             </button>
-            <button class="btn btn-icon btn-sm" onclick="eliminarMovimientoFromHistoryIndex(${idx})" title="Eliminar este movimiento">
-              <i data-lucide="trash-2" style="color:#ef4444;"></i>
+            <button type="button" class="btn btn-icon btn-sm" onclick="eliminarMovimientoFromHistoryIndex(${idx})" title="Eliminar este movimiento" style="background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding: 4px 8px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:3px;">
+              <i data-lucide="trash-2"></i> 🗑️ Borrar
             </button>
           </div>
         </td>
